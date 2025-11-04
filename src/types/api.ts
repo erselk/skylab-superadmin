@@ -1,0 +1,273 @@
+// API Response Wrapper Types
+export interface DataResult<T> {
+  success: boolean;
+  message: string;
+  httpStatus: string;
+  path: string;
+  timeStamp: string;
+  data: T;
+}
+
+export interface DataResultList<T> {
+  success: boolean;
+  message: string;
+  httpStatus: string;
+  path: string;
+  timeStamp: string;
+  data: T[];
+}
+
+export interface Result {
+  success: boolean;
+  message: string;
+  httpStatus: string;
+  path: string;
+  timeStamp: string;
+}
+
+export interface SuccessResult extends Result {}
+
+export interface DataResultVoid {
+  success: boolean;
+  message: string;
+  httpStatus: string;
+  path: string;
+  timeStamp: string;
+  data: object;
+}
+
+// Entity Types
+export interface UserDto {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  profilePictureUrl?: string;
+  linkedin?: string;
+  university?: string;
+  faculty?: string;
+  department?: string;
+  roles: string[];
+}
+
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  linkedin?: string;
+  university?: string;
+  faculty?: string;
+  department?: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface EventTypeDto {
+  id: string;
+  name: string;
+}
+
+export interface CreateEventTypeRequest {
+  name: string;
+}
+
+export interface UpdateEventTypeRequest {
+  name?: string;
+  competitive?: boolean;
+}
+
+export interface CompetitionDto {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  events?: EventDto[];
+  eventType?: EventTypeDto;
+}
+
+export interface CreateCompetitionRequest {
+  name: string;
+  startDate: string;
+  endDate: string;
+  active?: boolean;
+  eventTypeId?: string;
+}
+
+export interface UpdateCompetitionRequest {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  active?: boolean;
+}
+
+export interface CompetitorDto {
+  id: string;
+  user?: UserDto;
+  event?: EventDto;
+  points: number;
+  winner: boolean;
+}
+
+export interface CreateCompetitorRequest {
+  userId: string;
+  eventId: string;
+  points?: number;
+  winner?: boolean;
+}
+
+export interface UpdateCompetitorRequest {
+  userId?: string;
+  eventId?: string;
+  points?: number;
+  winner?: boolean;
+}
+
+export interface EventDto {
+  id: string;
+  name: string;
+  coverImageUrl?: string;
+  description?: string;
+  location?: string;
+  type?: EventTypeDto;
+  formUrl?: string;
+  startDate: string;
+  endDate?: string;
+  linkedin?: string;
+  active?: boolean;
+  competition?: CompetitionDto;
+  sessions?: SessionDto[];
+  imageUrls?: string[];
+  competitors?: CompetitorDto[];
+  season?: SeasonDto;
+}
+
+export interface CreateEventRequest {
+  name: string;
+  description?: string;
+  location: string;
+  eventTypeId: string;
+  formUrl?: string;
+  startDate: string;
+  endDate?: string;
+  linkedin?: string;
+  active?: boolean;
+  competitionId?: string;
+}
+
+export interface SeasonDto {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  events?: EventDto[];
+}
+
+export interface CreateSeasonRequest {
+  name: string;
+  startDate: string;
+  endDate: string;
+  active?: boolean;
+}
+
+export interface SessionDto {
+  id: string;
+  title: string;
+  speakerName?: string;
+  speakerLinkedin?: string;
+  speakerImageUrl?: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  orderIndex?: number;
+  event?: EventDto;
+  sessionType?: 'WORKSHOP' | 'PRESENTATION' | 'PANEL' | 'KEYNOTE' | 'NETWORKING' | 'OTHER' | 'CTF' | 'HACKATHON' | 'JAM';
+}
+
+export interface CreateSessionRequest {
+  eventId: string;
+  title: string;
+  speakerName?: string;
+  speakerLinkedin?: string;
+  description?: string;
+  startTime: string;
+  endTime?: string;
+  orderIndex?: number;
+  sessionType?: 'WORKSHOP' | 'PRESENTATION' | 'PANEL' | 'KEYNOTE' | 'NETWORKING' | 'OTHER' | 'CTF' | 'HACKATHON' | 'JAM';
+}
+
+export interface UploadImageResponseDto {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileUrl: string;
+  fileSize: number;
+}
+
+export interface CreateGroupRequest {
+  groupName: string;
+}
+
+export interface AnnouncementDto {
+  id: string;
+  title: string;
+  body: string;
+  active?: boolean;
+  eventType?: EventTypeDto;
+  formUrl?: string;
+  coverImageUrl?: string;
+}
+
+export interface CreateAnnouncementRequestDto {
+  title: string;
+  body: string;
+  active?: boolean;
+  eventTypeId: string;
+  formUrl?: string;
+}
+
+export interface UpdateAnnouncementRequest {
+  title?: string;
+  body?: string;
+  active?: boolean;
+  eventTypeId?: string;
+  formUrl?: string;
+}
+
+export interface RegisterRequestDto {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface RegisterResponseDto {
+  ldapSkyNumber: string;
+}
+
+// Response Types
+export type DataResultUserDto = DataResult<UserDto>;
+export type DataResultListUserDto = DataResultList<UserDto>;
+export type DataResultEventTypeDto = DataResult<EventTypeDto>;
+export type DataResultListEventTypeDto = DataResultList<EventTypeDto>;
+export type DataResultCompetitionDto = DataResult<CompetitionDto>;
+export type DataResultListCompetitionDto = DataResultList<CompetitionDto>;
+export type DataResultCompetitorDto = DataResult<CompetitorDto>;
+export type DataResultListCompetitorDto = DataResultList<CompetitorDto>;
+export type DataResultEventDto = DataResult<EventDto>;
+export type DataResultListEventDto = DataResultList<EventDto>;
+export type DataResultSeasonDto = DataResult<SeasonDto>;
+export type DataResultListSeasonDto = DataResultList<SeasonDto>;
+export type DataResultSessionDto = DataResult<SessionDto>;
+export type DataResultListSessionDto = DataResultList<SessionDto>;
+export type DataResultAnnouncementDto = DataResult<AnnouncementDto>;
+export type DataResultListAnnouncementDto = DataResultList<AnnouncementDto>;
+export type SuccessDataResultUploadImageResponseDto = DataResult<UploadImageResponseDto>;
+
