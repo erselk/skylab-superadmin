@@ -5,6 +5,7 @@ import type {
   UpdateUserRequest,
   Result,
 } from '@/types/api';
+import { normalizeRoleForBackend } from '@/config/roles';
 
 export const usersApi = {
   async getAll() {
@@ -32,7 +33,23 @@ export const usersApi = {
   },
 
   async addRole(username: string, role: string) {
-    return apiClient.put<Result>(`/api/users/add-role/${username}?role=${role}`);
+    const normalized = normalizeRoleForBackend(role);
+    return apiClient.put<Result>(`/api/users/add-role/${encodeURIComponent(username)}?role=${encodeURIComponent(normalized)}`);
+  },
+
+  async removeRole(username: string, role: string) {
+    // Local proxy'ye gönder (serverFetch cookie ile yetkilenecek)
+    const res = await fetch('/api/users/remove-role', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, role }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`removeRole failed: ${res.status} ${res.statusText} ${text}`);
+    }
+    return (await res.json()) as Result;
   },
 
   async updateProfilePicture(image: File) {

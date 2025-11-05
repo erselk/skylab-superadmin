@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Form } from '@/components/forms/Form';
 import { TextField } from '@/components/forms/TextField';
+import { Textarea } from '@/components/forms/Textarea';
 import { DatePicker } from '@/components/forms/DatePicker';
 import { Select } from '@/components/forms/Select';
 import { FileUpload } from '@/components/forms/FileUpload';
@@ -129,7 +130,7 @@ export default function NewEventPage() {
                 )}
                 <div className="space-y-4">
                   <TextField name="name" label="Ad" required />
-                  <TextField name="description" label="Açıklama" multiline rows={4} />
+                  <Textarea name="description" label="Açıklama" rows={4} />
                   <TextField name="location" label="Konum" />
                   <div>
                     <Select 

@@ -1,28 +1,86 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { getAnnouncements } from './actions';
 import { DataTable } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { AnnouncementDto } from '@/types/api';
+import { announcementsApi } from '@/lib/api/announcements';
 
-export default async function AnnouncementsPage() {
-  let announcements: AnnouncementDto[] = [];
-  let error: string | null = null;
+export default function AnnouncementsPage() {
+  const router = useRouter();
+  const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
 
-  try {
-    announcements = await getAnnouncements({ includeEventType: true });
-  } catch (err) {
-    error = err instanceof Error ? err.message : 'Duyurular yüklenirken hata oluştu';
-    console.error('Announcements page error:', err);
-  }
+  const loadAnnouncements = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await announcementsApi.getAll({ includeEventType: true });
+      if (response.success && response.data) {
+        setAnnouncements(response.data);
+      } else {
+        setError(response.message || 'Duyurular yüklenirken hata oluştu');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Duyurular yüklenirken hata oluştu');
+      console.error('Announcements page fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Format data for display (server-side)
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
+
+  const handleEdit = (announcement: AnnouncementDto) => {
+    router.push(`/announcements/${announcement.id}/edit`);
+  };
+
+  const handleDelete = (announcement: AnnouncementDto) => {
+    setSelectedAnnouncementId(announcement.id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedAnnouncementId) {
+      try {
+        await announcementsApi.delete(selectedAnnouncementId);
+        loadAnnouncements();
+        setShowDeleteModal(false);
+        setSelectedAnnouncementId(null);
+      } catch (err) {
+        alert('Silme işlemi başarısız oldu: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
+        console.error('Delete announcement error:', err);
+      }
+    }
+  };
+
+  // Format data for display
   const formattedAnnouncements = announcements.map(announcement => ({
     ...announcement,
     bodyPreview: announcement.body ? announcement.body.substring(0, 50) + '...' : '',
     statusText: announcement.active ? 'Aktif' : 'Pasif',
     eventTypeName: announcement.eventType?.name || '-',
   }));
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Duyurular</h1>
+          <p>Yükleniyor...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -63,10 +121,24 @@ export default async function AnnouncementsPage() {
               { key: 'statusText', header: 'Durum' },
               { key: 'eventTypeName', header: 'Etkinlik Tipi' },
             ]}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
             idKey="id"
           />
         )}
       </div>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Duyuruyu Sil"
+      >
+        <p>Bu duyuruyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="danger" onClick={confirmDelete}>Sil</Button>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>İptal</Button>
+        </div>
+      </Modal>
     </AppShell>
   );
 }

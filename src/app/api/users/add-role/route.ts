@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverFetch } from '@/lib/api/server-client';
 import { cookies } from 'next/headers';
+import { ALLOWED_ROLES, canAssign, isRoleAllowed, normalizeRoleForBackend } from '@/config/roles';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +14,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rol ekleme işlemini gerçekleştir
-    const result = await serverFetch(`/api/users/add-role/${encodeURIComponent(username)}?role=${role}`, {
+    if (!isRoleAllowed(role)) {
+      return NextResponse.json(
+        { success: false, message: 'İzin verilmeyen rol' },
+        { status: 400 }
+      );
+    }
+
+    // Mevcut kullanıcı rol yetkisi kontrolü (backend gereği sadece ADMIN izinli)
+    const me = await serverFetch<any>('/api/users/me');
+    const currentUserRoles: string[] = me?.data?.roles ?? [];
+    if (!currentUserRoles.includes('ADMIN')) {
+      return NextResponse.json(
+        { success: false, message: 'Yalnızca ADMIN rol atayabilir' },
+        { status: 403 }
+      );
+    }
+    // Ek koruma: tanımlı rollere sınırla
+    if (!canAssign(role as any, ['ADMIN'])) {
+      return NextResponse.json(
+        { success: false, message: 'Bu rol atanamaz' },
+        { status: 400 }
+      );
+    }
+
+    // Rol ekleme işlemini gerçekleştir (LDAP için role adını normalize et)
+    const normalizedRole = normalizeRoleForBackend(role);
+    const result = await serverFetch(`/api/users/add-role/${encodeURIComponent(username)}?role=${normalizedRole}`, {
       method: 'PUT',
     });
 

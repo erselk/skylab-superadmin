@@ -1,28 +1,86 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { getEvents } from './actions';
 import { DataTable } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { EventDto } from '@/types/api';
+import { eventsApi } from '@/lib/api/events';
 
-export default async function EventsPage() {
-  let events: EventDto[] = [];
-  let error: string | null = null;
+export default function EventsPage() {
+  const router = useRouter();
+  const [events, setEvents] = useState<EventDto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  try {
-    events = await getEvents();
-  } catch (err) {
-    error = err instanceof Error ? err.message : 'Etkinlikler yüklenirken hata oluştu';
-    console.error('Events page error:', err);
-  }
+  const loadEvents = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await eventsApi.getAll({ includeEventType: true });
+      if (response.success && response.data) {
+        setEvents(response.data);
+      } else {
+        setError(response.message || 'Etkinlikler yüklenirken hata oluştu');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Etkinlikler yüklenirken hata oluştu');
+      console.error('Events page fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Format data for display (server-side)
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const handleEdit = (event: EventDto) => {
+    router.push(`/events/${event.id}/edit`);
+  };
+
+  const handleDelete = (event: EventDto) => {
+    setSelectedEventId(event.id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedEventId) {
+      try {
+        await eventsApi.delete(selectedEventId);
+        loadEvents();
+        setShowDeleteModal(false);
+        setSelectedEventId(null);
+      } catch (err) {
+        alert('Silme işlemi başarısız oldu: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
+        console.error('Delete event error:', err);
+      }
+    }
+  };
+
+  // Format data for display
   const formattedEvents = events.map(event => ({
     ...event,
     startDateFormatted: event.startDate ? new Date(event.startDate).toLocaleDateString('tr-TR') : '',
     eventTypeName: event.type?.name || '-',
     statusText: event.active ? 'Aktif' : 'Pasif',
   }));
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Etkinlikler</h1>
+          <p>Yükleniyor...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -53,10 +111,24 @@ export default async function EventsPage() {
               { key: 'eventTypeName', header: 'Tip' },
               { key: 'statusText', header: 'Durum' },
             ]}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
             idKey="id"
           />
         )}
       </div>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Etkinliği Sil"
+      >
+        <p>Bu etkinliği silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="danger" onClick={confirmDelete}>Sil</Button>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>İptal</Button>
+        </div>
+      </Modal>
     </AppShell>
   );
 }

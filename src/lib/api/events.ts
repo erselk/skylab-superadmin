@@ -3,6 +3,7 @@ import type {
   DataResultListEventDto,
   DataResultEventDto,
   CreateEventRequest,
+  Result,
 } from '@/types/api';
 
 export const eventsApi = {
@@ -75,6 +76,17 @@ export const eventsApi = {
     formData.append('coverImage', coverImage);
     formData.append('data', JSON.stringify(data));
     return apiClient.postFormData<DataResultEventDto>('/api/events/', formData);
+  },
+
+  async update(id: string, coverImage: File | undefined, data: Partial<CreateEventRequest>) {
+    const formData = new FormData();
+    if (coverImage) formData.append('coverImage', coverImage);
+    formData.append('data', JSON.stringify(data));
+    return apiClient.putFormData<DataResultEventDto>(`/api/events/${id}`, formData);
+  },
+
+  async delete(id: string) {
+    return apiClient.delete<Result>(`/api/events/${id}`);
   },
 };
 

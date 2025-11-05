@@ -1,6 +1,6 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { getUsers } from './actions';
-import { DataTable } from '@/components/tables/DataTable';
+import { UsersTableClient } from './UsersTableClient';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import type { UserDto } from '@/types/api';
@@ -37,7 +37,7 @@ export default async function UsersPage() {
     <AppShell>
       <div>
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Kullanıcılar</h1>
+          <h1 className="text-2xl font-bold text-blue-900">Kullanıcılar</h1>
           <Link href="/users/new">
             <Button>Yeni Kullanıcı</Button>
           </Link>
@@ -70,17 +70,7 @@ export default async function UsersPage() {
             <p className="text-gray-600">Henüz kullanıcı bulunmamaktadır.</p>
           </div>
         ) : (
-          <DataTable
-            data={usersWithFormattedRoles}
-            columns={[
-              { key: 'firstName', header: 'Ad' },
-              { key: 'lastName', header: 'Soyad' },
-              { key: 'email', header: 'Email' },
-              { key: 'username', header: 'Kullanıcı Adı' },
-              { key: 'rolesString', header: 'Roller' },
-            ]}
-            idKey="id"
-          />
+          <UsersTableClient data={usersWithFormattedRoles as any} />
         )}
       </div>
     </AppShell>

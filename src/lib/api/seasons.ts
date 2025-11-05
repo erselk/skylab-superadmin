@@ -25,6 +25,10 @@ export const seasonsApi = {
     return apiClient.post<DataResultSeasonDto>('/api/seasons/', data);
   },
 
+  async update(id: string, data: Partial<CreateSeasonRequest>) {
+    return apiClient.patch<DataResultSeasonDto>(`/api/seasons/${id}`, data);
+  },
+
   async delete(id: string) {
     return apiClient.delete<Result>(`/api/seasons/${id}`);
   },

@@ -271,3 +271,5 @@ export type DataResultAnnouncementDto = DataResult<AnnouncementDto>;
 export type DataResultListAnnouncementDto = DataResultList<AnnouncementDto>;
 export type SuccessDataResultUploadImageResponseDto = DataResult<UploadImageResponseDto>;
 
+
+

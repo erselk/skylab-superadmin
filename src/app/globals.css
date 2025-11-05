@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Lacivert metin: Gri tonları laciverte (blue-900) zorla yönlendir */
+@layer utilities {
+  .text-gray-400 { color: rgb(30 58 138) !important; }
+  .text-gray-500 { color: rgb(30 58 138) !important; }
+  .text-gray-600 { color: rgb(30 58 138) !important; }
+  .text-gray-700 { color: rgb(30 58 138) !important; }
+  .text-gray-800 { color: rgb(30 58 138) !important; }
+  .text-gray-900 { color: rgb(30 58 138) !important; }
+}
+
+/* Başlıkları (Users sayfasındaki gibi) lacivert yap */
+@layer base {
+  h1 { @apply text-blue-900; }
+  h2 { @apply text-blue-900; }
+}

@@ -18,24 +18,52 @@ export async function getCompetitions(params?: { includeEvent?: boolean; include
     const endpoint = qs ? `/api/competitions/?${qs}` : `/api/competitions/`;
     const response = await serverFetch<DataResultListCompetitionDto>(endpoint);
     
-    // Response yapısını kontrol et
-    if (!response) {
-      console.error('getCompetitions: Boş response');
-      throw new Error('Geçersiz API yanıtı: Boş response');
+    console.log('Competitions API Response (full):', JSON.stringify(response, null, 2));
+    console.log('Competitions API Response:', {
+      success: response?.success,
+      message: response?.message,
+      hasData: !!response?.data,
+      dataType: Array.isArray(response?.data) ? 'array' : typeof response?.data,
+      dataLength: Array.isArray(response?.data) ? response.data.length : 'N/A',
+      responseKeys: response ? Object.keys(response) : 'no response',
+    });
+    
+    // Eğer response boş obje ise ({}) veya hiç property yoksa, boş array döndür
+    if (!response || (typeof response === 'object' && Object.keys(response).length === 0)) {
+      console.warn('API boş yanıt döndü, boş array döndürülüyor');
+      return [];
+    }
+
+    // Eğer data array ise ve success false olsa bile, boş liste döndürebiliriz
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    // Eğer success false ise ve mesaj varsa hata fırlat
+    if (response.success === false) {
+      const errorMessage = response.message || 'API isteği başarısız';
+      console.error('API Error Details:', {
+        message: response.message,
+        httpStatus: response.httpStatus,
+        path: response.path,
+        timeStamp: response.timeStamp,
+      });
+      throw new Error(errorMessage);
+    }
+
+    // Eğer response var ama success undefined ise ve data yoksa, muhtemelen boş liste
+    if (response.success === undefined && !response.data) {
+      console.warn('API yanıtında success ve data yok, boş array döndürülüyor');
+      return [];
+    }
+
+    // data property'si olmalı ve array olmalı
+    if (response.data && !Array.isArray(response.data)) {
+      throw new Error('Geçersiz API yanıtı: data bir array değil');
     }
     
-    // DataResult formatında mı kontrol et
-    if ('data' in response) {
-      return response.data || [];
-    }
-    
-    // Direkt array dönüyorsa onu kullan
-    if (Array.isArray(response)) {
-      return response;
-    }
-    
-    console.error('getCompetitions: Beklenmeyen response formatı:', JSON.stringify(response).substring(0, 200));
-    throw new Error('Geçersiz API yanıtı: Beklenmeyen format');
+    // Eğer buraya geldiysek ve data varsa döndür
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('getCompetitions error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
@@ -54,8 +82,16 @@ export async function getCompetitionById(id: string, params?: { includeEvent?: b
       `/api/competitions/${id}${qs ? `?${qs}` : ''}`
     );
     
-    if (!response || !response.data) {
-      throw new Error('Geçersiz API yanıtı');
+    if (!response) {
+      throw new Error('API yanıtı alınamadı');
+    }
+
+    if (response.success === false) {
+      throw new Error(response.message || 'API isteği başarısız');
+    }
+
+    if (!response.data) {
+      throw new Error('Geçersiz API yanıtı: data bulunamadı');
     }
     
     return response.data;

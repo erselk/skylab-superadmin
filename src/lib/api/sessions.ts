@@ -18,6 +18,14 @@ export const sessionsApi = {
     return apiClient.post<DataResultSessionDto>('/api/sessions/', data);
   },
 
+  async getById(id: string) {
+    return apiClient.get<DataResultSessionDto>(`/api/sessions/${id}`);
+  },
+
+  async update(id: string, data: Partial<CreateSessionRequest>) {
+    return apiClient.patch<DataResultSessionDto>(`/api/sessions/${id}`, data);
+  },
+
   async delete(id: string) {
     return apiClient.delete<DataResultVoid>(`/api/sessions/${id}`);
   },

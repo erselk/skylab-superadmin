@@ -153,6 +153,32 @@ class ApiClient {
       return res.json();
     });
   }
+
+  putFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return fetch(`${this._baseURL}${endpoint}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers,
+      body: formData,
+    }).then(res => {
+      if (!res.ok) {
+        if (res.status === 401) {
+          this.clearToken();
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
+      return res.json();
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

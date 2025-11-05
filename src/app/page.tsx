@@ -10,7 +10,22 @@ export default async function RootPage() {
   if (!token) {
     redirect('/login');
   }
-  
-  // Token varsa dashboard'a yönlendir
+
+  // Token varsa ama süresi geçmiş/geçersizse login'e yönlendir
+  try {
+    const [, payloadBase64] = token.split('.');
+    const payloadJson = Buffer.from(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const payload = JSON.parse(payloadJson) as { exp?: number };
+
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    if (!payload?.exp || payload.exp <= nowInSeconds) {
+      redirect('/login');
+    }
+  } catch {
+    // JWT parse edilemezse güvenli tarafta kal ve login'e yönlendir
+    redirect('/login');
+  }
+
+  // Geçerli token varsa dashboard'a yönlendir
   redirect('/dashboard');
 }
