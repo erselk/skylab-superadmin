@@ -2,9 +2,14 @@ import { apiClient } from './client';
 import type {
   SuccessDataResultUploadImageResponseDto,
   SuccessResult,
+  DataResultList,
+  UploadImageResponseDto,
 } from '@/types/api';
 
 export const imagesApi = {
+  async getAll() {
+    return apiClient.get<DataResultList<UploadImageResponseDto>>('/api/images/');
+  },
   async upload(image: File) {
     // Token'ı kontrol et ve gerekirse cookie'den al
     if (typeof window !== 'undefined') {

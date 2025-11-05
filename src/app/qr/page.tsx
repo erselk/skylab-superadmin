@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/forms/TextField';
 import { Form } from '@/components/forms/Form';
 import { z } from 'zod';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 const qrSchema = z.object({
   url: z.string().url('Geçerli bir URL girin'),
@@ -17,15 +18,17 @@ const qrSchema = z.object({
 export default function QRPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async (data: z.infer<typeof qrSchema>) => {
     setLoading(true);
+    setError(null);
     try {
       const blob = await qrCodesApi.generateQRCode(data.url, data.width, data.height);
       const url = URL.createObjectURL(blob);
       setQrCode(url);
     } catch (error) {
-      console.error(error);
+      setError(error instanceof Error ? error.message : 'QR oluşturma sırasında bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -33,9 +36,14 @@ export default function QRPage() {
 
   return (
     <AppShell>
+      <ErrorBoundary>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">QR Kod Oluştur</h1>
-        <Form schema={qrSchema} onSubmit={handleGenerate}>
+        <Form
+          schema={qrSchema}
+          onSubmit={handleGenerate}
+          defaultValues={{ url: 'https://example.com', width: '300', height: '300' }}
+        >
           {(methods) => (
             <>
               <div className="space-y-4">
@@ -51,10 +59,18 @@ export default function QRPage() {
             </>
           )}
         </Form>
+        {error && (
+          <div className="mt-4 p-3 rounded-md border border-red-300 bg-red-50 text-red-700 text-sm">{error}</div>
+        )}
         
         {qrCode && (
           <div className="mt-6">
-            <img src={qrCode} alt="QR Code" className="border rounded-lg" />
+            <img
+              src={qrCode}
+              alt="QR Code"
+              className="border rounded-lg"
+              onError={() => setError('QR görseli yüklenemedi')}
+            />
             <div className="mt-4">
               <a href={qrCode} download="qrcode.png">
                 <Button variant="secondary">İndir</Button>
@@ -63,7 +79,9 @@ export default function QRPage() {
           </div>
         )}
       </div>
+      </ErrorBoundary>
     </AppShell>
   );
 }
+
 

@@ -1,52 +1,139 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { FileUpload } from '@/components/forms/FileUpload';
-import { Form } from '@/components/forms/Form';
 import { Button } from '@/components/ui/Button';
-import { z } from 'zod';
+import { eventsApi } from '@/lib/api/events';
 import { imagesApi } from '@/lib/api/images';
-
-const uploadSchema = z.object({
-  image: z.instanceof(File),
-});
+import Link from 'next/link';
 
 export default function ImagesPage() {
-  const router = useRouter();
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [images, setImages] = useState<{ url: string; name?: string; id?: string }[]>([]);
 
-  const handleSubmit = async (data: z.infer<typeof uploadSchema>) => {
-    setUploading(true);
+  const loadImages = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      await imagesApi.upload(data.image);
-      router.refresh();
-    } catch (error) {
-      console.error(error);
+      const res = await eventsApi.getAll({ includeImages: true });
+      const list = (res.data || []).flatMap((ev) => {
+        const fromCover = ev.coverImageUrl ? [{ url: ev.coverImageUrl, name: `${ev.name} - kapak` }] : [];
+        const fromImages = (ev.imageUrls || []).map((u) => ({ url: u, name: ev.name }));
+        return [...fromCover, ...fromImages];
+      });
+      // LocalStorage'dan yüklenen görselleri ekle
+      let uploaded: { url: string; name?: string; id?: string }[] = [];
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('uploaded_images') : null;
+        if (raw) {
+          const parsed: { id: string; fileUrl: string; fileName: string }[] = JSON.parse(raw);
+          uploaded = parsed.map((p) => ({ url: p.fileUrl, name: p.fileName, id: p.id }));
+        }
+      } catch {}
+      const combined = [...uploaded, ...list];
+      // URL'e göre tekrarlı olanları kaldır
+      const seen = new Set<string>();
+      const unique = combined.filter((it) => {
+        if (seen.has(it.url)) return false;
+        seen.add(it.url);
+        return true;
+      });
+      setImages(unique);
+    } catch (e: any) {
+      setError(e?.message || 'Görseller yüklenemedi');
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
+  const handleDelete = async (id?: string, url?: string) => {
+    if (!id) return; // yalnızca bizim yüklediklerimizi silebiliriz
+    const ok = window.confirm('Bu resmi silmek istediğinize emin misiniz?');
+    if (!ok) return;
+    try {
+      await imagesApi.delete(id);
+      try {
+        const raw = localStorage.getItem('uploaded_images');
+        if (raw) {
+          const parsed: { id: string; fileUrl: string; fileName: string }[] = JSON.parse(raw);
+          const next = parsed.filter((p) => p.id !== id && p.fileUrl !== url);
+          localStorage.setItem('uploaded_images', JSON.stringify(next));
+        }
+      } catch {}
+      setImages((prev) => prev.filter((img) => img.id !== id));
+    } catch (e) {
+      alert('Silme işlemi başarısız');
+    }
+  };
+
+  useEffect(() => {
+    void loadImages();
+  }, []);
+
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Resim Yükle</h1>
-        <Form schema={uploadSchema} onSubmit={handleSubmit}>
-          {(methods) => (
-            <>
-              <FileUpload name="image" label="Resim" accept="image/*" required />
-              <div className="mt-6">
-                <Button type="submit" disabled={uploading}>
-                  {uploading ? 'Yükleniyor...' : 'Yükle'}
-                </Button>
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Resimler</h1>
+          <Link href="/images/new">
+            <Button>Yeni Resim</Button>
+          </Link>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-gray-600">Yükleniyor...</div>
+        ) : images.length === 0 ? (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center text-gray-600">
+            Henüz resim bulunmuyor.
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-6">
+            {images.map((img) => (
+              <div key={img.url} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                <div className="aspect-[4/3] bg-gray-100">
+                  <img
+                    src={img.url}
+                    alt={img.name || 'image'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-3 border-t border-gray-100">
+                  <div className="text-sm text-gray-700 truncate" title={img.name || ''}>{img.name || 'Görsel'}</div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:text-blue-700 text-sm"
+                    >
+                      Görüntüle
+                    </a>
+                    {img.id ? (
+                      <button
+                        onClick={() => handleDelete(img.id, img.url)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Sil
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Etkinlik</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-        </Form>
+            ))}
+          </div>
+        )}
       </div>
     </AppShell>
   );
 }
+
 
