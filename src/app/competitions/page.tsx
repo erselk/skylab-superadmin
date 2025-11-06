@@ -98,8 +98,8 @@ export default function CompetitionsPage() {
             <p className="text-red-700">{error}</p>
           </div>
         ) : competitions.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-gray-600">Henüz yarışma bulunmamaktadır.</p>
+          <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
+            <p className="text-dark opacity-60">Henüz yarışma bulunmamaktadır.</p>
           </div>
         ) : (
           <DataTable

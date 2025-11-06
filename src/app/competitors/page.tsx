@@ -105,7 +105,7 @@ export default function CompetitorsPage() {
             {error.includes('403') || error.includes('yetkiniz') ? (
               <div className="text-sm text-red-600">
                 <p className="mb-2">Bu sayfayı görüntülemek için gerekli yetkiniz bulunmamaktadır.</p>
-                <p className="mt-2 text-xs text-gray-600">
+                <p className="mt-2 text-xs text-dark opacity-60">
                   Bu endpoint için backend SecurityConfig'de izin tanımlanmamış olabilir.
                 </p>
                 <p className="mt-3">Lütfen yöneticinizle iletişime geçin.</p>
@@ -115,8 +115,8 @@ export default function CompetitorsPage() {
             )}
           </div>
         ) : competitors.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-gray-600">Henüz yarışmacı bulunmamaktadır.</p>
+          <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
+            <p className="text-dark opacity-60">Henüz yarışmacı bulunmamaktadır.</p>
           </div>
         ) : (
           <DataTable

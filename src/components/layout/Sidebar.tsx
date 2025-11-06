@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
-import { getOAuth2LogoutUrl } from '@/lib/auth/oauth2';
+import { useEffect, useState } from 'react';
 import { 
   HiOutlineChartBar, 
   HiOutlineUsers, 
@@ -17,7 +16,7 @@ import {
   HiOutlinePhoto,
   HiOutlineQrCode
 } from 'react-icons/hi2';
-import { HiOutlineLogout } from 'react-icons/hi';
+import type { UserDto } from '@/types/api';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: HiOutlineChartBar },
@@ -35,45 +34,40 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const [user, setUser] = useState<UserDto | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = async () => {
-    try {
-      // LocalStorage'ı önce temizle
-      localStorage.removeItem('auth_token');
-      
-      // Logout endpoint'ini çağır
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        console.error('Logout response not ok:', response.status);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            setUser(data.user);
+          }
+        }
+      } catch (error) {
+        console.error('Kullanıcı bilgileri yüklenirken hata:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      // Cookie'lerin silinmesi için bekleme
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // OAuth sağlayıcısından da çıkış yapmak için logout URL'ine git
-      // Post-logout redirect URI olarak login sayfasını kullan
-      const postLogoutRedirectUri = `${window.location.origin}/login?logout=${Date.now()}`;
-      const logoutUrl = getOAuth2LogoutUrl(postLogoutRedirectUri);
-      
-      // OAuth logout URL'ine git
-      window.location.href = logoutUrl;
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Hata olsa bile login'e yönlendir
-      localStorage.removeItem('auth_token');
-      window.location.replace(`/login?logout=${Date.now()}`);
-    }
-  };
+    };
+
+    fetchUser();
+  }, []);
 
   return (
-    <div className="h-screen w-64 bg-lacivert text-pembe flex flex-col">
-      <div className="p-6 border-b border-lacivert-700">
-        <h1 className="text-xl font-bold text-yesil">Skylab Admin</h1>
+    <div className="h-screen w-64 bg-dark text-light flex flex-col">
+      <div className="p-4 border-b border-dark-700 flex items-center justify-center">
+        <img 
+          src="/logo.png" 
+          alt="Skylab Admin" 
+          className="w-full h-auto max-h-16 object-contain"
+        />
       </div>
       
       <nav className="flex-1 overflow-y-auto p-4">
@@ -86,8 +80,8 @@ export function Sidebar() {
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-pembe-300 text-yesil'
-                      : 'text-pembe hover:text-yesil'
+                      ? 'bg-brand text-light font-medium'
+                      : 'text-light hover:bg-dark-800 hover:text-brand'
                   }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -99,14 +93,47 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-lacivert-700">
-        <button
-          onClick={handleLogout}
-          className="w-full px-4 py-2 bg-pembe-400 hover:bg-pembe-500 text-red-600 hover:text-red-700 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <HiOutlineLogout className="w-5 h-5" />
-          <span>Çıkış Yap</span>
-        </button>
+      <div className="p-3 border-t border-dark-700">
+        {loading ? (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-dark-700 animate-pulse flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="h-4 bg-dark-700 rounded animate-pulse mb-1.5" />
+              <div className="h-3 bg-dark-700 rounded animate-pulse w-2/3" />
+            </div>
+          </div>
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            {user.profilePictureUrl ? (
+              <img
+                src={user.profilePictureUrl}
+                alt={`${user.firstName} ${user.lastName}`}
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-dark font-semibold flex-shrink-0">
+                {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-light font-medium text-sm truncate">
+                {user.firstName && user.lastName 
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.username}
+              </p>
+              <p className="text-light/60 text-xs truncate">
+                {user.email}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-dark-700 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-light/60 text-xs truncate">Kullanıcı bilgisi yüklenemedi</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -185,7 +185,7 @@ export default function EditEventPage() {
                   <TextField name="linkedin" label="LinkedIn URL" type="url" placeholder="https://www.linkedin.com/events/..." />
                   {event.coverImageUrl && (
                     <div>
-                      <label className="block text-sm font-medium text-pembe mb-1">Mevcut Kapak</label>
+                      <label className="block text-sm font-medium text-dark mb-1">Mevcut Kapak</label>
                       <img src={event.coverImageUrl} alt="Mevcut Kapak" className="h-24 w-40 object-cover rounded border" />
                     </div>
                   )}

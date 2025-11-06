@@ -32,42 +32,42 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="overflow-x-auto bg-lacivert rounded-lg shadow border border-pembe-200">
-      <table className="min-w-full divide-y divide-pembe-200">
-        <thead className="bg-lacivert">
+    <div className="overflow-x-auto bg-light rounded-lg shadow border border-dark-200">
+      <table className="min-w-full divide-y divide-dark-200">
+        <thead className="bg-light">
           <tr>
             {columns.map((column) => (
               <th
                 key={String(column.key)}
-                className="px-6 py-3 text-left text-xs font-medium text-yesil uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-brand uppercase tracking-wider"
               >
                 {column.header}
               </th>
             ))}
             {(onEdit || onDelete) && (
-              <th className="px-6 py-3 text-left text-xs font-medium text-yesil uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-brand uppercase tracking-wider">
                 İşlemler
               </th>
             )}
           </tr>
         </thead>
-        <tbody className="bg-lacivert divide-y divide-pembe-200">
+        <tbody className="bg-light divide-y divide-dark-200">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="px-6 py-4 text-center text-pembe opacity-60">
+              <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="px-6 py-4 text-center text-dark opacity-60">
                 Veri bulunamadı
               </td>
             </tr>
           ) : (
             data.map((row) => (
-              <tr key={getRowId(row)} className="hover:bg-lacivert-600">
+              <tr key={getRowId(row)} className="hover:bg-light-300">
                 {columns.map((column) => {
                   const value = typeof column.key === 'string' 
                     ? column.key.split('.').reduce((obj, key) => obj?.[key], row)
                     : row[column.key];
                   
                   return (
-                    <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap text-sm text-pembe">
+                    <td key={String(column.key)} className="px-6 py-4 whitespace-nowrap text-sm text-dark">
                       {column.render ? column.render(value, row) : String(value ?? '')}
                     </td>
                   );
@@ -78,7 +78,7 @@ export function DataTable<T extends Record<string, any>>({
                       {onEdit && (
                         <button
                           onClick={() => onEdit(row)}
-                          className="text-pembe hover:text-yesil cursor-pointer"
+                          className="text-dark hover:text-brand cursor-pointer"
                         >
                           Düzenle
                         </button>
@@ -86,7 +86,7 @@ export function DataTable<T extends Record<string, any>>({
                       {onDelete && (
                         <button
                           onClick={() => onDelete(row)}
-                          className="text-pembe hover:text-yesil cursor-pointer"
+                          className="text-dark hover:text-brand cursor-pointer"
                         >
                           Sil
                         </button>

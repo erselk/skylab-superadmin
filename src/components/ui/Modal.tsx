@@ -14,18 +14,18 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-lacivert bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-lacivert rounded-lg shadow-xl max-w-md w-full mx-4 z-10 border border-pembe-200">
-        <div className="flex items-center justify-between p-6 border-b border-pembe-200">
-          <h2 className="text-xl font-bold text-yesil">{title}</h2>
+      <div className="fixed inset-0 bg-dark bg-opacity-50" onClick={onClose} />
+      <div className="relative bg-light rounded-lg shadow-xl max-w-md w-full mx-4 z-10 border border-dark-200">
+        <div className="flex items-center justify-between p-6 border-b border-dark-200">
+          <h2 className="text-xl font-bold text-brand">{title}</h2>
           <button
             onClick={onClose}
-            className="text-pembe opacity-60 hover:opacity-100 text-2xl font-bold"
+            className="text-dark opacity-60 hover:opacity-100 text-2xl font-bold"
           >
             ×
           </button>
         </div>
-        <div className="p-6 text-pembe">
+        <div className="p-6 text-dark">
           {children}
         </div>
       </div>

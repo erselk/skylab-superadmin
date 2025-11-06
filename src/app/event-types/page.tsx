@@ -88,8 +88,8 @@ export default function EventTypesPage() {
             <p className="text-red-700">{error}</p>
           </div>
         ) : eventTypes.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-gray-600">Henüz etkinlik tipi bulunmamaktadır.</p>
+          <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
+            <p className="text-dark opacity-60">Henüz etkinlik tipi bulunmamaktadır.</p>
           </div>
         ) : (
           <DataTable
@@ -115,7 +115,7 @@ export default function EventTypesPage() {
             <p>
               <strong>{selectedEventType?.name}</strong> adlı etkinlik tipini silmek istediğinize emin misiniz?
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-dark opacity-60">
               Bu işlem geri alınamaz.
             </p>
             <div className="flex gap-4 mt-6">

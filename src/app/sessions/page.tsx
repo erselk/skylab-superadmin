@@ -97,8 +97,8 @@ export default function SessionsPage() {
             <p className="text-red-700">{error}</p>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-gray-600">Henüz oturum bulunmamaktadır.</p>
+          <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
+            <p className="text-dark opacity-60">Henüz oturum bulunmamaktadır.</p>
           </div>
         ) : (
           <DataTable

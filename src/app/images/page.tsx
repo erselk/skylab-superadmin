@@ -82,48 +82,48 @@ export default function ImagesPage() {
         </div>
 
         {error && (
-          <div className="bg-lacivert border border-pembe-200 rounded-lg p-4 mb-6 text-pembe">
+          <div className="bg-light border border-dark-200 rounded-lg p-4 mb-6 text-dark">
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="text-pembe opacity-60">Yükleniyor...</div>
+          <div className="text-dark opacity-60">Yükleniyor...</div>
         ) : images.length === 0 ? (
-          <div className="bg-lacivert border border-pembe-200 rounded-lg p-6 text-center text-pembe opacity-60">
+          <div className="bg-light border border-dark-200 rounded-lg p-6 text-center text-dark opacity-60">
             Henüz resim bulunmuyor.
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-6">
             {images.map((img) => (
-              <div key={img.url} className="border border-pembe-200 rounded-lg overflow-hidden bg-lacivert">
-                <div className="aspect-[4/3] bg-lacivert-600">
+              <div key={img.url} className="border border-dark-200 rounded-lg overflow-hidden bg-light">
+                <div className="aspect-[4/3] bg-dark-200">
                   <img
                     src={img.url}
                     alt={img.name || 'image'}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="p-3 border-t border-pembe-200">
-                  <div className="text-sm text-pembe truncate" title={img.name || ''}>{img.name || 'Görsel'}</div>
+                <div className="p-3 border-t border-dark-200">
+                  <div className="text-sm text-dark truncate" title={img.name || ''}>{img.name || 'Görsel'}</div>
                   <div className="mt-3 flex justify-between items-center">
                     <a
                       href={img.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-pembe hover:text-yesil text-sm"
+                      className="text-dark hover:text-brand text-sm"
                     >
                       Görüntüle
                     </a>
                     {img.id ? (
                       <button
                         onClick={() => handleDelete(img.id, img.url)}
-                        className="text-pembe hover:text-yesil text-sm"
+                        className="text-dark hover:text-brand text-sm"
                       >
                         Sil
                       </button>
                     ) : (
-                      <span className="text-pembe opacity-60 text-sm">Etkinlik</span>
+                      <span className="text-dark opacity-60 text-sm">Etkinlik</span>
                     )}
                   </div>
                 </div>

@@ -30,19 +30,19 @@ export function Toggle({ name, label, hint }: ToggleProps) {
             ref={field.ref}
             className="sr-only peer"
           />
-          <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-lacivert relative transition-colors duration-300 ease-in-out ${value ? 'bg-yesil' : 'bg-pembe'}`}>
-            <div className={`absolute top-[2px] left-[2px] bg-white rounded-full h-5 w-5 shadow-sm transition-transform duration-300 ease-in-out ${value ? 'translate-x-5' : 'translate-x-0'}`}></div>
+          <div className={`w-11 h-6 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand relative transition-colors duration-300 ease-in-out ${value ? 'bg-brand' : 'bg-dark-300'}`}>
+            <div className={`absolute top-[2px] left-[2px] bg-light rounded-full h-5 w-5 shadow-sm transition-transform duration-300 ease-in-out ${value ? 'translate-x-5' : 'translate-x-0'}`}></div>
           </div>
         </div>
-        <span className="text-sm font-medium text-pembe">
+        <span className="text-sm font-medium text-dark">
           {label}
         </span>
         {hint && (
-          <p className="text-xs text-pembe opacity-70">{hint}</p>
+          <p className="text-xs text-dark opacity-70">{hint}</p>
         )}
       </label>
       {errors[name] && (
-        <p className="mt-1 text-sm text-pembe">{errors[name]?.message as string}</p>
+        <p className="mt-1 text-sm text-dark">{errors[name]?.message as string}</p>
       )}
     </div>
   );

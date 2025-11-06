@@ -17,11 +17,11 @@ export function Select({ name, label, options, required, disabled, hint }: Selec
 
   return (
     <div>
-      <label className="block text-sm font-medium text-pembe mb-1">
-        {label} {required && <span className="text-pembe">*</span>}
+      <label className="block text-sm font-medium text-dark mb-1">
+        {label} {required && <span className="text-dark">*</span>}
       </label>
       {hint && (
-        <p className="text-xs text-pembe opacity-70 mb-1">{hint}</p>
+        <p className="text-xs text-dark opacity-70 mb-1">{hint}</p>
       )}
       <select
         name={name}
@@ -29,7 +29,7 @@ export function Select({ name, label, options, required, disabled, hint }: Selec
         disabled={disabled}
         onChange={(e) => field.onChange(e.target.value)}
         onBlur={field.onBlur}
-        className="w-full px-3 py-2 bg-pembe/85 border border-pembe-200 rounded-md focus:outline-none focus:ring-2 focus:ring-lacivert focus:border-transparent disabled:bg-pembe-50 disabled:cursor-not-allowed text-lacivert"
+        className="w-full px-3 py-2 bg-light border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-light-300 disabled:cursor-not-allowed text-dark"
       >
         <option value="">Seçiniz</option>
         {options.map((option) => (
@@ -39,7 +39,7 @@ export function Select({ name, label, options, required, disabled, hint }: Selec
         ))}
       </select>
       {errors[name] && (
-        <p className="mt-1 text-sm text-pembe">{errors[name]?.message as string}</p>
+        <p className="mt-1 text-sm text-dark">{errors[name]?.message as string}</p>
       )}
     </div>
   );

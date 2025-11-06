@@ -40,36 +40,36 @@ export default async function DashboardPage() {
   return (
     <AppShell>
       <div>
-        <h1 className="text-2xl font-bold mb-6 text-yesil">Dashboard</h1>
+        <h1 className="text-2xl font-bold mb-6 text-brand">Dashboard</h1>
         
         {backendError && (
-          <div className="mb-6 bg-lacivert border border-pembe-200 rounded-lg p-4">
+          <div className="mb-6 bg-light border border-dark-200 rounded-lg p-4">
             <div className="flex items-center gap-2">
-              <span className="text-pembe">⚠️</span>
+              <span className="text-dark">⚠️</span>
               <div>
-                <p className="text-pembe font-semibold">Backend Servisi Erişilemiyor</p>
-                <p className="text-pembe text-sm">Backend servisi şu anda çalışmıyor veya erişilemiyor. Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.</p>
+                <p className="text-dark font-semibold">Backend Servisi Erişilemiyor</p>
+                <p className="text-dark text-sm">Backend servisi şu anda çalışmıyor veya erişilemiyor. Veriler yüklenemedi. Lütfen daha sonra tekrar deneyin.</p>
               </div>
             </div>
           </div>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-lacivert p-6 rounded-lg shadow border border-pembe-200">
-            <h3 className="text-lg font-semibold text-yesil">Kullanıcılar</h3>
-            <p className="text-3xl font-bold text-pembe mt-2">{usersCount}</p>
+          <div className="bg-light p-6 rounded-lg shadow border border-dark-200">
+            <h3 className="text-lg font-semibold text-brand">Kullanıcılar</h3>
+            <p className="text-3xl font-bold text-dark mt-2">{usersCount}</p>
           </div>
-          <div className="bg-lacivert p-6 rounded-lg shadow border border-pembe-200">
-            <h3 className="text-lg font-semibold text-yesil">Yarışmalar</h3>
-            <p className="text-3xl font-bold text-pembe mt-2">{competitionsCount}</p>
+          <div className="bg-light p-6 rounded-lg shadow border border-dark-200">
+            <h3 className="text-lg font-semibold text-brand">Yarışmalar</h3>
+            <p className="text-3xl font-bold text-dark mt-2">{competitionsCount}</p>
           </div>
-          <div className="bg-lacivert p-6 rounded-lg shadow border border-pembe-200">
-            <h3 className="text-lg font-semibold text-yesil">Etkinlikler</h3>
-            <p className="text-3xl font-bold text-pembe mt-2">{eventsCount}</p>
+          <div className="bg-light p-6 rounded-lg shadow border border-dark-200">
+            <h3 className="text-lg font-semibold text-brand">Etkinlikler</h3>
+            <p className="text-3xl font-bold text-dark mt-2">{eventsCount}</p>
           </div>
-          <div className="bg-lacivert p-6 rounded-lg shadow border border-pembe-200">
-            <h3 className="text-lg font-semibold text-yesil">Duyurular</h3>
-            <p className="text-3xl font-bold text-pembe mt-2">{announcementsCount}</p>
+          <div className="bg-light p-6 rounded-lg shadow border border-dark-200">
+            <h3 className="text-lg font-semibold text-brand">Duyurular</h3>
+            <p className="text-3xl font-bold text-dark mt-2">{announcementsCount}</p>
           </div>
         </div>
       </div>

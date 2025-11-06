@@ -49,12 +49,12 @@ export default function NewImagePage() {
         </div>
 
         {error && (
-          <div className="bg-lacivert border border-pembe-200 rounded-lg p-4 mb-6 text-pembe">
+          <div className="bg-light border border-dark-200 rounded-lg p-4 mb-6 text-dark">
             {error}
           </div>
         )}
 
-        <div className="bg-lacivert border border-pembe-200 rounded-lg p-6">
+        <div className="bg-light border border-dark-200 rounded-lg p-6">
           <Form schema={uploadSchema} onSubmit={handleSubmit}>
             {() => (
               <>

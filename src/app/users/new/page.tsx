@@ -93,7 +93,7 @@ export default function NewUserPage() {
   return (
     <AppShell>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-yesil">Yeni Kullanıcı</h1>
+        <h1 className="text-2xl font-bold mb-6 text-brand">Yeni Kullanıcı</h1>
         <Form schema={registerSchema} onSubmit={handleSubmit}>
           {(methods) => (
             <>
@@ -108,10 +108,10 @@ export default function NewUserPage() {
                 <TextField name="faculty" label="Fakülte" placeholder="Bilgisayar ve Bilişim Fakültesi" />
                 <TextField name="department" label="Bölüm" placeholder="Bilgisayar Mühendisliği" />
                 <div>
-                  <label className="block text-sm font-medium text-pembe mb-2">Roller</label>
+                  <label className="block text-sm font-medium text-dark mb-2">Roller</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(availableRoles || []).map((role) => (
-                      <label key={role} className="flex items-center gap-2 text-pembe">
+                      <label key={role} className="flex items-center gap-2 text-dark">
                         <input
                           type="checkbox"
                           className="h-4 w-4"

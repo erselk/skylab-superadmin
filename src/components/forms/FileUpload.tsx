@@ -33,18 +33,18 @@ export function FileUpload({ name, label, accept, required, hint }: FileUploadPr
 
   return (
     <div>
-      <label className="block text-sm font-medium text-pembe mb-1">
-        {label} {required && <span className="text-pembe">*</span>}
+      <label className="block text-sm font-medium text-dark mb-1">
+        {label} {required && <span className="text-dark">*</span>}
       </label>
       {hint && (
-        <p className="text-xs text-pembe opacity-70 mb-1">{hint}</p>
+        <p className="text-xs text-dark opacity-70 mb-1">{hint}</p>
       )}
       <input
         name={name}
         type="file"
         accept={accept}
         onChange={handleFileChange}
-        className="w-full px-3 py-2 bg-pembe/85 border border-pembe-200 rounded-md focus:outline-none focus:ring-2 focus:ring-lacivert focus:border-transparent text-lacivert"
+        className="w-full px-3 py-2 bg-light border border-dark-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent text-dark"
       />
       {preview && (
         <div className="mt-2">
@@ -52,7 +52,7 @@ export function FileUpload({ name, label, accept, required, hint }: FileUploadPr
         </div>
       )}
       {errors[name] && (
-        <p className="mt-1 text-sm text-pembe">{errors[name]?.message as string}</p>
+        <p className="mt-1 text-sm text-dark">{errors[name]?.message as string}</p>
       )}
     </div>
   );

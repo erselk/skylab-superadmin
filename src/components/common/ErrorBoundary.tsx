@@ -30,7 +30,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       return this.props.fallback ?? (
-        <div className="p-4 rounded-md border border-pembe-300 bg-pembe-50 text-pembe-700">
+        <div className="p-4 rounded-md border border-dark-300 bg-light-300 text-dark-700">
           <div className="font-semibold mb-1">Beklenmeyen bir hata oluştu</div>
           <div className="text-sm opacity-80">{this.state.errorMessage}</div>
         </div>

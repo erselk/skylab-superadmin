@@ -28,10 +28,10 @@ function LoginContent() {
   // Hata durumunda kullanıcıya göster
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center max-w-md p-6 bg-lacivert border border-pembe-200 rounded-lg">
-          <h1 className="text-2xl font-bold mb-4 text-yesil">Giriş Hatası</h1>
-          <p className="text-pembe mb-4">
+      <div className="flex min-h-screen items-center justify-center bg-light">
+        <div className="text-center max-w-md p-6 bg-light border border-dark-200 rounded-lg">
+          <h1 className="text-2xl font-bold mb-4 text-brand">Giriş Hatası</h1>
+          <p className="text-dark mb-4">
             {error === 'token_exchange_failed' 
               ? 'Token değişimi başarısız oldu. Lütfen tekrar deneyin.'
               : error === 'no_code'
@@ -40,7 +40,7 @@ function LoginContent() {
             }
           </p>
           {details && (
-            <div className="mb-4 p-3 bg-lacivert rounded text-sm text-left text-pembe opacity-80 break-all border border-pembe-200">
+            <div className="mb-4 p-3 bg-light rounded text-sm text-left text-dark opacity-80 break-all border border-dark-200">
               <strong>Detay:</strong> {details}
             </div>
           )}
@@ -49,7 +49,7 @@ function LoginContent() {
               setHasRedirected(false);
               window.location.href = getOAuth2AuthUrl();
             }}
-            className="px-4 py-2 bg-pembe text-lacivert rounded hover:bg-pembe-300 font-medium"
+            className="px-4 py-2 bg-brand text-light rounded hover:bg-brand-600 font-medium"
           >
             Tekrar Dene
           </button>
@@ -58,7 +58,7 @@ function LoginContent() {
               onClick={() => {
                 router.push('/login');
               }}
-              className="px-4 py-2 bg-pembe-300 text-lacivert rounded hover:bg-pembe-400 text-sm"
+              className="px-4 py-2 bg-dark-200 text-light rounded hover:bg-dark-300 text-sm"
             >
               Sayfayı Yenile
             </button>
@@ -105,15 +105,15 @@ function LoginContent() {
     };
 
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center max-w-md p-6 bg-lacivert border border-pembe-200 rounded-lg">
-          <h1 className="text-2xl font-bold mb-4 text-yesil">Başarıyla Çıkış Yaptınız</h1>
-          <p className="text-pembe mb-4">
+      <div className="flex min-h-screen items-center justify-center bg-light">
+        <div className="text-center max-w-md p-6 bg-light border border-dark-200 rounded-lg">
+          <h1 className="text-2xl font-bold mb-4 text-brand">Başarıyla Çıkış Yaptınız</h1>
+          <p className="text-dark mb-4">
             Güvenli bir şekilde çıkış yaptınız. Tekrar giriş yapmak için lütfen aşağıdaki butona tıklayın.
           </p>
           <button
             onClick={handleLogin}
-            className="px-4 py-2 bg-pembe text-lacivert rounded hover:bg-pembe-300 font-medium"
+            className="px-4 py-2 bg-brand text-light rounded hover:bg-brand-600 font-medium"
           >
             Giriş Yap
           </button>
@@ -123,10 +123,10 @@ function LoginContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-light">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4 text-yesil">Yönlendiriliyor...</h1>
-        <p className="text-pembe opacity-60">Giriş sayfasına yönlendiriliyorsunuz.</p>
+        <h1 className="text-2xl font-bold mb-4 text-brand">Yönlendiriliyor...</h1>
+        <p className="text-dark opacity-60">Giriş sayfasına yönlendiriliyorsunuz.</p>
       </div>
     </div>
   );
@@ -135,9 +135,9 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-light">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-yesil">Yükleniyor...</h1>
+          <h1 className="text-2xl font-bold mb-4 text-brand">Yükleniyor...</h1>
         </div>
       </div>
     }>

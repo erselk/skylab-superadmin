@@ -17,9 +17,9 @@ export function Button({ children, onClick, href, variant = 'primary', type = 'b
 
   const baseClasses = 'px-4 py-2 rounded-md font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
   const variantClasses = {
-    primary: 'bg-pembe/20 text-pembe hover:bg-pembe/30 border border-pembe/30',
-    secondary: 'bg-pembe-200 text-lacivert hover:bg-pembe-300',
-    danger: 'bg-pembe-500 text-lacivert hover:bg-pembe-600',
+    primary: 'bg-brand text-light hover:bg-brand-600 border border-brand',
+    secondary: 'bg-dark-200 text-light hover:bg-dark-300',
+    danger: 'bg-red-500 text-light hover:bg-red-600',
   };
 
   const combinedClassName = className ? `${baseClasses} ${variantClasses[variant]} ${className}` : `${baseClasses} ${variantClasses[variant]}`;
