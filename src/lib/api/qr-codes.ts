@@ -1,91 +1,50 @@
-import { apiClient } from './client';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.yildizskylab.com';
 
 export const qrCodesApi = {
+  /**
+   * QR kod oluşturur (logo olmadan)
+   * @param url QR kod içine eklenecek URL
+   * @param width QR kod genişliği (piksel)
+   * @param height QR kod yüksekliği (piksel)
+   * @returns PNG formatında QR kod blob'u
+   */
   async generateQRCode(url: string, width: number, height: number): Promise<Blob> {
-    // Token'ı kontrol et ve gerekirse cookie'den al
-    if (typeof window !== 'undefined') {
-      try {
-        const tokenResponse = await fetch('/api/auth/token', {
-          credentials: 'include',
-        });
-        if (tokenResponse.ok) {
-          const { token: tokenData } = await tokenResponse.json();
-          if (tokenData) {
-            apiClient.setToken(tokenData);
-          }
-        }
-      } catch (error) {
-        console.error('Token fetch error:', error);
-      }
-    }
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.yildizskylab.com';
-    const headers = apiClient.getHeaders();
-    // Blob response için Content-Type header'ını kaldır
-    const headersObj: Record<string, string> =
-      headers instanceof Headers
-        ? Object.fromEntries(headers.entries())
-        : Array.isArray(headers)
-          ? Object.fromEntries(headers)
-          : { ...(headers as Record<string, string>) };
-    delete headersObj['Content-Type'];
-    
     const response = await fetch(
       `${API_BASE_URL}/api/qrCodes/generateQRCode?url=${encodeURIComponent(url)}&width=${width}&height=${height}`,
       {
-        headers: headersObj,
+        method: 'GET',
         credentials: 'include',
       }
     );
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`QR code generation failed: ${response.status} - ${errorText}`);
+      throw new Error(`QR kod oluşturma başarısız: ${response.status} - ${errorText}`);
     }
     
     return response.blob();
   },
 
+  /**
+   * Logo ile QR kod oluşturur
+   * @param url QR kod içine eklenecek URL
+   * @param width QR kod genişliği (piksel)
+   * @param height QR kod yüksekliği (piksel)
+   * @param logoSize Logo boyutu (piksel, varsayılan: 50)
+   * @returns PNG formatında QR kod blob'u
+   */
   async generateQRCodeWithLogo(url: string, width: number, height: number, logoSize: number = 50): Promise<Blob> {
-    // Token'ı kontrol et ve gerekirse cookie'den al
-    if (typeof window !== 'undefined') {
-      try {
-        const tokenResponse = await fetch('/api/auth/token', {
-          credentials: 'include',
-        });
-        if (tokenResponse.ok) {
-          const { token: tokenData } = await tokenResponse.json();
-          if (tokenData) {
-            apiClient.setToken(tokenData);
-          }
-        }
-      } catch (error) {
-        console.error('Token fetch error:', error);
-      }
-    }
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.yildizskylab.com';
-    const headers = apiClient.getHeaders();
-    // Blob response için Content-Type header'ını kaldır
-    const headersObj: Record<string, string> =
-      headers instanceof Headers
-        ? Object.fromEntries(headers.entries())
-        : Array.isArray(headers)
-          ? Object.fromEntries(headers)
-          : { ...(headers as Record<string, string>) };
-    delete headersObj['Content-Type'];
-    
     const response = await fetch(
       `${API_BASE_URL}/api/qrCodes/generateQRCodeWithLogo?url=${encodeURIComponent(url)}&width=${width}&height=${height}&logoSize=${logoSize}`,
       {
-        headers: headersObj,
+        method: 'GET',
         credentials: 'include',
       }
     );
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`QR code generation failed: ${response.status} - ${errorText}`);
+      throw new Error(`QR kod oluşturma başarısız: ${response.status} - ${errorText}`);
     }
     
     return response.blob();
