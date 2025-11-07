@@ -1,115 +1,201 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
+import type { Dispatch } from 'react';
 
-type ErrorKind = 'backend' | 'frontend' | null;
+type ErrorKind = 'backend' | 'frontend';
+
+type MessageState = {
+  visible: boolean;
+  kind: ErrorKind | null;
+  lastMessage: string | null;
+};
+
+type MessageAction =
+  | { type: 'show'; payload: { kind: ErrorKind; message: string | null } }
+  | { type: 'reset' };
+
+type ContactInfo = {
+  icon: string;
+  title: string;
+  instruction: string;
+  name: string;
+  phone: string;
+};
+
+const styles = {
+  card: 'mb-6 rounded-lg border border-dark-200 bg-light p-4 text-dark',
+  layout: 'flex items-start gap-3',
+  icon: 'text-dark text-xl',
+  title: 'font-semibold',
+  description: 'text-sm',
+  contactLink: 'block font-medium hover:underline',
+  detail: 'mt-1 text-xs opacity-70',
+} as const;
+
+const ERROR_CONTACTS: Record<ErrorKind, ContactInfo> = {
+  backend: {
+    icon: '⚠️',
+    title: 'Backend sorunu tespit edildi.',
+    instruction: 'Lütfen hemen backend developerı açana kadar arayın.',
+    name: 'Yusuf Açmacı',
+    phone: '+90 552 491 35 25',
+  },
+  frontend: {
+    icon: '🐞',
+    title: 'Frontend sorunu tespit edildi.',
+    instruction:
+      'Lütfen 15.00-23.00 arasında frontend developera WhatsApp üzerinden haber verin.',
+    name: 'Yusuf Ersel Kara',
+    phone: '+90 505 006 71 11',
+  },
+};
+
+const INITIAL_STATE: MessageState = {
+  visible: false,
+  kind: null,
+  lastMessage: null,
+};
+
+function classify(message: string | undefined | null): ErrorKind {
+  const msg = (message || '').toLowerCase();
+
+  if (
+    msg.includes('http 5') ||
+    msg.includes(' 500') ||
+    msg.includes(' 501') ||
+    msg.includes(' 502') ||
+    msg.includes(' 503') ||
+    msg.includes(' 504') ||
+    msg.includes('bad gateway') ||
+    msg.includes('backend servisi') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error')
+  ) {
+    return 'backend';
+  }
+
+  return 'frontend';
+}
+
+function messageReducer(state: MessageState, action: MessageAction): MessageState {
+  switch (action.type) {
+    case 'show':
+      return {
+        visible: true,
+        kind: action.payload.kind,
+        lastMessage: action.payload.message,
+      };
+    case 'reset':
+      return INITIAL_STATE;
+    default:
+      return state;
+  }
+}
+
+function extractMessage(reason: unknown): string | null {
+  if (typeof reason === 'string') {
+    return reason;
+  }
+
+  if (
+    typeof reason === 'object' &&
+    reason !== null &&
+    'message' in reason &&
+    typeof (reason as { message?: unknown }).message === 'string'
+  ) {
+    return (reason as { message: string }).message;
+  }
+
+  if (typeof reason === 'object' && reason !== null && 'toString' in reason) {
+    const fallback = (reason as { toString?: () => string }).toString?.();
+    if (fallback && fallback !== '[object Object]') {
+      return fallback;
+    }
+  }
+
+  return null;
+}
+
+function formatPhoneHref(phone: string) {
+  return `tel:${phone.replace(/\s+/g, '')}`;
+}
+
+function createCustomErrorListener(
+  kind: ErrorKind,
+  dispatch: Dispatch<MessageAction>,
+): EventListener {
+  return (event) => {
+    const customEvent = event as CustomEvent<{ message?: string }>;
+    dispatch({
+      type: 'show',
+      payload: {
+        kind,
+        message: customEvent.detail?.message ?? null,
+      },
+    });
+  };
+}
 
 export function GlobalErrorMessenger() {
-  const [visible, setVisible] = useState(false);
-  const [kind, setKind] = useState<ErrorKind>(null);
-  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(messageReducer, INITIAL_STATE);
 
   useEffect(() => {
-    function classify(message: string | undefined | null): ErrorKind {
-      const msg = (message || '').toLowerCase();
-      // Backend hatası: HTTP 5xx, 502, Bad Gateway, fetch/network failure, explicit backend marker
-      if (
-        msg.includes('http 5') ||
-        msg.includes(' 500') ||
-        msg.includes(' 501') ||
-        msg.includes(' 502') ||
-        msg.includes(' 503') ||
-        msg.includes(' 504') ||
-        msg.includes('bad gateway') ||
-        msg.includes('backend servisi') ||
-        msg.includes('failed to fetch') ||
-        msg.includes('networkerror') ||
-        msg.includes('network error')
-      ) {
-        return 'backend';
-      }
-      return 'frontend';
-    }
+    const onUnhandledRejection: EventListener = (event) => {
+      const reason: unknown = (event as PromiseRejectionEvent).reason;
+      const message = extractMessage(reason);
+      const kind = classify(message);
 
-    const onUnhandledRejection = (e: PromiseRejectionEvent) => {
-      const reason: any = e.reason;
-      const message = typeof reason === 'string' ? reason : (reason?.message || reason?.toString?.());
-      const k = classify(message);
-      setKind(k);
-      setLastMessage(message || null);
-      setVisible(true);
+      dispatch({ type: 'show', payload: { kind, message } });
     };
 
-    const onError = (e: ErrorEvent) => {
-      const message = e.message || (e.error && (e.error as Error)?.message) || '';
-      const k = classify(message);
-      setKind(k);
-      setLastMessage(message || null);
-      setVisible(true);
+    const onError: EventListener = (event) => {
+      const errorEvent = event as ErrorEvent;
+      const message = errorEvent.message || extractMessage(errorEvent.error);
+      const kind = classify(message);
+
+      dispatch({ type: 'show', payload: { kind, message } });
     };
 
-    const onCustomFrontend = (e: Event) => {
-      // CustomEvent<'frontend-error'> with detail.message
-      const ce = e as CustomEvent<{ message?: string }>;
-      setKind('frontend');
-      setLastMessage(ce.detail?.message || null);
-      setVisible(true);
-    };
-
-    const onCustomBackend = (e: Event) => {
-      const ce = e as CustomEvent<{ message?: string }>;
-      setKind('backend');
-      setLastMessage(ce.detail?.message || null);
-      setVisible(true);
-    };
+    const onFrontendError = createCustomErrorListener('frontend', dispatch);
+    const onBackendError = createCustomErrorListener('backend', dispatch);
 
     window.addEventListener('unhandledrejection', onUnhandledRejection);
     window.addEventListener('error', onError);
-    window.addEventListener('frontend-error', onCustomFrontend as EventListener);
-    window.addEventListener('backend-error', onCustomBackend as EventListener);
+    window.addEventListener('frontend-error', onFrontendError);
+    window.addEventListener('backend-error', onBackendError);
 
     return () => {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onError);
-      window.removeEventListener('frontend-error', onCustomFrontend as EventListener);
-      window.removeEventListener('backend-error', onCustomBackend as EventListener);
+      window.removeEventListener('frontend-error', onFrontendError);
+      window.removeEventListener('backend-error', onBackendError);
+      dispatch({ type: 'reset' });
     };
   }, []);
 
-  if (!visible || !kind) return null;
+  if (!state.visible || !state.kind) {
+    return null;
+  }
 
-  const isBackend = kind === 'backend';
+  const contact = ERROR_CONTACTS[state.kind];
 
   return (
-    <div className="mb-6 bg-light border border-dark-200 rounded-lg p-4 text-dark">
-      <div className="flex items-start gap-3">
-        <div className="text-dark">{isBackend ? '⚠️' : '🐞'}</div>
+    <div className={styles.card}>
+      <div className={styles.layout}>
+        <div className={styles.icon}>{contact.icon}</div>
         <div className="flex-1">
-          {isBackend ? (
-            <>
-              <div className="font-semibold">Backend sorunu tespit edildi.</div>
-              <div className="text-sm">
-                Lütfen hemen backend developerı açana kadar arayın.
-                <a href="tel:+905524913525" className="block font-medium hover:underline">
-                  <span className="block">Yusuf Açmacı</span>
-                  +90 552 491 35 25
-                </a>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="font-semibold">Frontend sorunu tespit edildi.</div>
-              <div className="text-sm">
-                Lütfen 15.00-23.00 arasında frontend developera WhatsApp üzerinden haber verin.
-                <a href="tel:+905050067111" className="block font-medium hover:underline">
-                  <span className="block">Yusuf Ersel Kara</span>
-                  +90 505 006 71 11
-                </a>
-              </div>
-            </>
-          )}
-          {lastMessage ? (
-            <div className="text-xs opacity-70 mt-1">Detay: {lastMessage}</div>
+          <div className={styles.title}>{contact.title}</div>
+          <div className={styles.description}>
+            {contact.instruction}
+            <a className={styles.contactLink} href={formatPhoneHref(contact.phone)}>
+              <span className="block">{contact.name}</span>
+              {contact.phone}
+            </a>
+          </div>
+          {state.lastMessage ? (
+            <div className={styles.detail}>Detay: {state.lastMessage}</div>
           ) : null}
         </div>
       </div>
