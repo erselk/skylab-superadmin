@@ -96,9 +96,7 @@ export default function QRPage() {
           }}
         </Form>
         </div>
-        {error && (
-          <div className="p-3 rounded-md border border-red-300 bg-red-50 text-red-700 text-sm">{error}</div>
-        )}
+        {/* Hata mesajını göstermeyelim; global banner yeterli */}
         
         {qrCode && (
           <div>

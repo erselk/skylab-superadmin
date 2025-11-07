@@ -102,40 +102,31 @@ export default function SeasonsPage() {
             </Link>
           )}
         />
-
         {error ? (
           <div className="bg-light border border-dark-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-brand mb-2">Hata</h2>
             <p className="text-dark mb-4">{error}</p>
-            {error.includes('403') || error.includes('yetkiniz') ? (
-              <div className="text-sm text-dark">
-                <p className="mb-2">Bu sayfayı görüntülemek için gerekli yetkiniz bulunmamaktadır.</p>
-                <p className="mt-2 text-xs text-dark opacity-60">
-                  Bu endpoint için backend SecurityConfig'de izin tanımlanmamış olabilir.
-                </p>
-                <p className="mt-3 text-dark">Lütfen yöneticinizle iletişime geçin.</p>
-              </div>
-            ) : (
-              <p className="text-sm text-dark">Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</p>
-            )}
           </div>
         ) : seasons.length === 0 ? (
           <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
             <p className="text-dark opacity-60">Henüz sezon bulunmamaktadır.</p>
           </div>
         ) : (
-          <DataTable
-            data={formattedSeasons}
-            columns={[
-              { key: 'name', header: 'Ad' },
-              { key: 'startDateFormatted', header: 'Başlangıç' },
-              { key: 'endDateFormatted', header: 'Bitiş' },
-              { key: 'statusText', header: 'Durum' },
-            ]}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            idKey="id"
-          />
+          <div className="space-y-2">
+            {seasons.map((s) => (
+              <div
+                key={s.id}
+                onClick={() => handleEdit(s)}
+                className="bg-light border border-dark-200 rounded-md p-3 hover:bg-brand-50 hover:border-brand transition cursor-pointer flex items-center justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-dark-900 truncate">{s.name}</div>
+                  <div className="text-xs text-dark-600 truncate">{new Date(s.startDate).toLocaleDateString('tr-TR')} - {s.endDate ? new Date(s.endDate).toLocaleDateString('tr-TR') : '-'}</div>
+                </div>
+                <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${s.active ? 'bg-brand-100 text-brand-700 border-brand-200/50' : 'bg-dark-100 text-dark-600 border-dark-200/50'}`}>{s.active ? 'Aktif' : 'Pasif'}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

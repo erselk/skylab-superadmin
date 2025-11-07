@@ -3,18 +3,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { 
-  HiOutlineChartBar, 
-  HiOutlineUsers, 
-  HiOutlineTrophy,
+import {
   HiOutlineCalendar,
-  HiOutlineTag,
-  HiOutlineUser,
   HiOutlineCalendarDays,
-  HiOutlineMicrophone,
+  HiOutlineChartBar,
   HiOutlineMegaphone,
+  HiOutlineMicrophone,
   HiOutlinePhoto,
-  HiOutlineQrCode
+  HiOutlineQrCode,
+  HiOutlineTag,
+  HiOutlineTrophy,
+  HiOutlineUser,
+  HiOutlineUsers,
 } from 'react-icons/hi2';
 import type { UserDto } from '@/types/api';
 
@@ -32,10 +32,16 @@ const menuItems = [
   { href: '/qr', label: 'QR Kodlar', icon: HiOutlineQrCode },
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
+};
+
+export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [user, setUser] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -43,7 +49,7 @@ export function Sidebar() {
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.authenticated && data.user) {
@@ -60,32 +66,113 @@ export function Sidebar() {
     fetchUser();
   }, []);
 
-  return (
-    <div className="h-screen w-64 bg-dark text-light flex flex-col">
-      <div className="p-4 border-b border-dark-700 flex items-center justify-center">
-        <img 
-          src="/logo.png" 
-          alt="Skylab Admin" 
-          className="w-full h-auto max-h-16 object-contain"
-        />
+  const handleNavigate = () => {
+    if (onMobileClose) {
+      onMobileClose();
+    }
+  };
+
+  const renderUserSection = (showDetails: boolean) => {
+    if (loading) {
+      return (
+        <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
+          <div className="h-10 w-10 flex-shrink-0 animate-pulse rounded-full bg-dark-700" />
+          {showDetails && (
+            <div className="min-w-0 flex-1">
+              <div className="mb-1.5 h-4 animate-pulse rounded bg-dark-700" />
+              <div className="h-3 w-2/3 animate-pulse rounded bg-dark-700" />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
+          <div className="h-10 w-10 flex-shrink-0 rounded-full bg-dark-700" />
+          {showDetails && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-light/60">Kullanıcı bilgisi yüklenemedi</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const initials =
+      user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U';
+
+    return (
+      <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
+        {user.profilePictureUrl ? (
+          <img
+            src={user.profilePictureUrl}
+            alt={`${user.firstName} ${user.lastName}`}
+            className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-dark">
+            {initials}
+          </div>
+        )}
+        {showDetails && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-light">
+              {user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.username}
+            </p>
+            <p className="truncate text-xs text-light/60">{user.email}</p>
+          </div>
+        )}
       </div>
-      
-      <nav className="flex-1 overflow-y-auto p-4">
+    );
+  };
+
+  const renderMenu = (showLabels: boolean) => (
+    <div className="flex h-full flex-col">
+      <div
+        className={`flex items-center border-b border-dark-700 p-4 ${
+          showLabels ? 'justify-start' : 'justify-center'
+        }`}
+      >
+        {showLabels ? (
+          <img
+            src="/logoyatay.png"
+            alt="Skylab Admin"
+            className="h-12 w-auto origin-left transition-all"
+          />
+        ) : (
+          <img
+            src="/logo.png"
+            alt="Skylab Admin"
+            className="h-12 w-12 object-contain"
+          />
+        )}
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2 py-4">
         <ul className="space-y-2">
           {menuItems.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+            const isActive =
+              pathname === item.href || pathname?.startsWith(item.href + '/');
+
+            const linkClasses = [
+              'flex items-center rounded-lg text-sm font-medium transition-colors',
+              showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
+              isActive
+                ? 'bg-brand text-light'
+                : 'text-light hover:bg-dark-800 hover:text-brand',
+            ].join(' ');
+
             return (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-brand text-light font-medium'
-                      : 'text-light hover:bg-dark-800 hover:text-brand'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                <Link href={item.href} className={linkClasses} onClick={handleNavigate}>
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  {showLabels && (
+                    <span className="whitespace-nowrap">{item.label}</span>
+                  )}
                 </Link>
               </li>
             );
@@ -93,49 +180,42 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="p-3 border-t border-dark-700">
-        {loading ? (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-dark-700 animate-pulse flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="h-4 bg-dark-700 rounded animate-pulse mb-1.5" />
-              <div className="h-3 bg-dark-700 rounded animate-pulse w-2/3" />
-            </div>
-          </div>
-        ) : user ? (
-          <div className="flex items-center gap-3">
-            {user.profilePictureUrl ? (
-              <img
-                src={user.profilePictureUrl}
-                alt={`${user.firstName} ${user.lastName}`}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-dark font-semibold flex-shrink-0">
-                {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-light font-medium text-sm truncate">
-                {user.firstName && user.lastName 
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.username}
-              </p>
-              <p className="text-light/60 text-xs truncate">
-                {user.email}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-dark-700 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-light/60 text-xs truncate">Kullanıcı bilgisi yüklenemedi</p>
-            </div>
-          </div>
-        )}
-      </div>
+      <div className="border-t border-dark-700 p-3">{renderUserSection(showLabels)}</div>
     </div>
+  );
+
+  return (
+    <>
+      <aside
+        className={`hidden h-full flex-col bg-dark text-light transition-[width] duration-300 ease-out lg:flex ${
+          isDesktopExpanded ? 'w-64' : 'w-20'
+        }`}
+        onMouseEnter={() => setIsDesktopExpanded(true)}
+        onMouseLeave={() => setIsDesktopExpanded(false)}
+      >
+        {renderMenu(isDesktopExpanded)}
+      </aside>
+
+      <div
+        className={`fixed inset-0 z-40 transition-opacity duration-300 lg:hidden ${
+          isMobileOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <div
+          className="absolute inset-0 bg-dark/60"
+          onClick={onMobileClose}
+          role="presentation"
+        />
+      </div>
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 transform flex-col bg-dark text-light shadow-lg transition-transform duration-300 lg:hidden ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {renderMenu(true)}
+      </aside>
+    </>
   );
 }
 

@@ -102,40 +102,28 @@ export default function AnnouncementsPage() {
             </Link>
           )}
         />
-
-        {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Hata</h2>
-            <p className="text-red-700 mb-4">{error}</p>
-            {error.includes('403') || error.includes('yetkiniz') ? (
-              <div className="text-sm text-red-600">
-                <p className="mb-2">Bu sayfayı görüntülemek için gerekli yetkiniz bulunmamaktadır.</p>
-                <p className="mt-2 text-xs text-dark opacity-60">
-                  Bu endpoint için backend SecurityConfig'de izin tanımlanmamış olabilir.
-                </p>
-                <p className="mt-3">Lütfen yöneticinizle iletişime geçin.</p>
-              </div>
-            ) : (
-              <p className="text-sm text-red-600">Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</p>
-            )}
-          </div>
-        ) : announcements.length === 0 ? (
+        {announcements.length === 0 ? (
           <div className="bg-light border border-dark-200 rounded-lg p-6 text-center">
             <p className="text-dark opacity-60">Henüz duyuru bulunmamaktadır.</p>
           </div>
         ) : (
-          <DataTable
-            data={formattedAnnouncements}
-            columns={[
-              { key: 'title', header: 'Başlık' },
-              { key: 'bodyPreview', header: 'İçerik' },
-              { key: 'statusText', header: 'Durum' },
-              { key: 'eventTypeName', header: 'Etkinlik Tipi' },
-            ]}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            idKey="id"
-          />
+          <div className="space-y-2">
+            {announcements.map((a) => (
+              <div
+                key={a.id}
+                onClick={() => handleEdit(a)}
+                className="bg-light border border-dark-200 rounded-md p-3 hover:bg-brand-50 hover:border-brand transition cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-dark-900 truncate">{a.title}</div>
+                    <div className="text-xs text-dark-600 truncate">{a.eventType?.name || '-'} • {(a.body || '').slice(0, 60)}{(a.body || '').length > 60 ? '…' : ''}</div>
+                  </div>
+                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${a.active ? 'bg-brand-100 text-brand-700 border-brand-200/50' : 'bg-dark-100 text-dark-600 border-dark-200/50'}`}>{a.active ? 'Aktif' : 'Pasif'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

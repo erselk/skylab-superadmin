@@ -92,7 +92,6 @@ export default function EventTypesPage() {
             </Link>
           )}
         />
-
         {error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Hata</h2>
@@ -103,15 +102,17 @@ export default function EventTypesPage() {
             <p className="text-dark opacity-60">Henüz etkinlik tipi bulunmamaktadır.</p>
           </div>
         ) : (
-          <DataTable
-            data={eventTypes}
-            columns={[
-              { key: 'name', header: 'Ad' },
-            ]}
-            idKey="id"
-            onEdit={handleEdit}
-            onDelete={handleDeleteClick}
-          />
+          <div className="space-y-2">
+            {eventTypes.map((et) => (
+              <div
+                key={et.id}
+                onClick={() => handleEdit(et)}
+                className="bg-light border border-dark-200 rounded-md p-3 hover:bg-brand-50 hover:border-brand transition cursor-pointer"
+              >
+                <div className="text-sm font-medium text-dark-900">{et.name}</div>
+              </div>
+            ))}
+          </div>
         )}
 
         <Modal

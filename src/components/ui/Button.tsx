@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import type { MouseEvent, ReactNode } from 'react';
 
 interface ButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
+  children: ReactNode;
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
   href?: string;
   variant?: 'primary' | 'secondary' | 'danger';
   type?: 'button' | 'submit';

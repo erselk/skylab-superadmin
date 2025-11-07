@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { HiOutlineTrash } from 'react-icons/hi2';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
@@ -34,6 +35,7 @@ export default function EditCompetitionPage() {
   const [error, setError] = useState<string | null>(null);
   const [eventTypes, setEventTypes] = useState<{ value: string; label: string }[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -75,6 +77,22 @@ export default function EditCompetitionPage() {
         alert('Yarışma güncellenirken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
       }
     });
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    const ok = confirm('Bu yarışmayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.');
+    if (!ok) return;
+    try {
+      setIsDeleting(true);
+      await competitionsApi.delete(id);
+      router.push('/competitions');
+    } catch (error) {
+      console.error('Competition delete error:', error);
+      alert('Yarışma silinirken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) {
@@ -154,14 +172,27 @@ export default function EditCompetitionPage() {
                       </div>
                     </div>
                 </div>
-                  <div className="flex justify-between items-center gap-3 mt-6 pt-5 border-t border-dark-200">
-                    <Button href="/competitions" variant="secondary" className="text-red-500 hover:bg-red-500 hover:text-white bg-transparent border-red-500">
+                  <div className="mt-6 flex items-center justify-end gap-2 border-t border-dark-200 pt-5">
+                    <Button href="/competitions" variant="secondary">
                       İptal
                     </Button>
-                    <Button type="submit" disabled={isPending} className="!text-brand hover:!bg-brand hover:!text-white !bg-transparent border-brand">
-                    {isPending ? 'Güncelleniyor...' : 'Güncelle'}
-                  </Button>
-                </div>
+                    <Button
+                      type="submit"
+                      disabled={isPending}
+                      className="!text-brand hover:!bg-brand hover:!text-white !bg-transparent border-brand"
+                    >
+                      {isPending ? 'Güncelleniyor...' : 'Güncelle'}
+                    </Button>
+                    <Button
+                      onClick={handleDelete}
+                      variant="danger"
+                      disabled={isDeleting}
+                      className="!px-3 !py-3 flex items-center justify-center !bg-transparent !border-0 hover:!bg-transparent"
+                      aria-label="Yarışmayı sil"
+                    >
+                      <HiOutlineTrash className="h-5 w-5 text-danger" />
+                    </Button>
+                  </div>
               </>
             );
           }}

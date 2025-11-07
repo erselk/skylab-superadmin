@@ -101,7 +101,6 @@ export default function SessionsPage() {
             </Link>
           )}
         />
-
         {error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 mb-2">Hata</h2>
@@ -112,19 +111,23 @@ export default function SessionsPage() {
             <p className="text-dark opacity-60">Henüz oturum bulunmamaktadır.</p>
           </div>
         ) : (
-          <DataTable
-            data={formattedSessions}
-            columns={[
-              { key: 'title', header: 'Başlık' },
-              { key: 'speakerName', header: 'Konuşmacı' },
-              { key: 'startTimeFormatted', header: 'Başlangıç' },
-              { key: 'endTimeFormatted', header: 'Bitiş' },
-              { key: 'sessionType', header: 'Tip' },
-            ]}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            idKey="id"
-          />
+          <div className="space-y-2">
+            {sessions.map((s) => (
+              <div
+                key={s.id}
+                onClick={() => handleEdit(s)}
+                className="bg-light border border-dark-200 rounded-md p-3 hover:bg-brand-50 hover:border-brand transition cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-dark-900 truncate">{s.title}</div>
+                    <div className="text-xs text-dark-600 truncate">{s.speakerName || '-'} • {s.startTime ? new Date(s.startTime).toLocaleString('tr-TR') : '-'}{s.endTime ? ` - ${new Date(s.endTime).toLocaleString('tr-TR')}` : ''}</div>
+                  </div>
+                  {s.sessionType && (<span className="px-2 py-0.5 text-[10px] font-medium rounded-full border bg-dark-100 text-dark-600 border-dark-200/50">{s.sessionType}</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

@@ -78,14 +78,23 @@ class ApiClient {
     }
 
     const url = `${this._baseURL}${endpoint}`;
-    const response = await fetch(url, {
-      ...options,
-      credentials: 'include', // Cookie'lerin gönderilmesi için
-      headers: {
-        ...this.getHeaders(),
-        ...options.headers,
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        credentials: 'include', // Cookie'lerin gönderilmesi için
+        headers: {
+          ...this.getHeaders(),
+          ...options.headers,
+        },
+      });
+    } catch (err) {
+      if (typeof window !== 'undefined') {
+        const message = err instanceof Error ? err.message : 'Ağ/bağlantı hatası';
+        window.dispatchEvent(new CustomEvent('backend-error', { detail: { message } }));
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       // 401 Unauthorized durumunda token geçersiz demektir
@@ -102,6 +111,12 @@ class ApiClient {
           });
           // Login sayfasına yönlendir
           window.location.href = '/login';
+        }
+      }
+      // 4xx (401/403 hariç) ve 5xx durumlarını backend hatası olarak yayınla
+      if ((response.status >= 400 && response.status !== 401 && response.status !== 403)) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${response.status}` } }));
         }
       }
       // Hata gövdesi boş olabilir; güvenle okumak için text() üzerinden ilerleyelim
@@ -181,6 +196,9 @@ class ApiClient {
       body: formData,
     }).then(res => {
       if (!res.ok) {
+        if (res.status >= 500 && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }));
+        }
         // 401 Unauthorized durumunda token geçersiz demektir
         if (res.status === 401) {
           this.clearToken();
@@ -225,6 +243,9 @@ class ApiClient {
       body: formData,
     }).then(res => {
       if (!res.ok) {
+        if (res.status >= 500 && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }));
+        }
         if (res.status === 401) {
           this.clearToken();
           if (typeof window !== 'undefined') {

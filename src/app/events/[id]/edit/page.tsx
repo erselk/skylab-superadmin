@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { HiOutlineTrash } from 'react-icons/hi2';
 import { AppShell } from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
@@ -12,6 +13,7 @@ import { Select } from '@/components/forms/Select';
 import { FileUpload } from '@/components/forms/FileUpload';
 import { Button } from '@/components/ui/Button';
 import { Toggle } from '@/components/ui/Toggle';
+import { Modal } from '@/components/ui/Modal';
 import { z } from 'zod';
 import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
@@ -42,6 +44,8 @@ export default function EditEventPage() {
   const [error, setError] = useState<string | null>(null);
   const [eventTypes, setEventTypes] = useState<{ value: string; label: string }[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -98,6 +102,21 @@ export default function EditEventPage() {
     });
   };
 
+  const handleDelete = async () => {
+    if (!event) return;
+    setIsDeleting(true);
+    try {
+      await eventsApi.delete(event.id);
+      router.push('/events');
+    } catch (err) {
+      console.error('Event delete error:', err);
+      alert('Etkinlik silinirken hata oluştu: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppShell>
@@ -131,11 +150,24 @@ export default function EditEventPage() {
         <PageHeader
           title="Etkinlik Düzenle"
           description={event.name}
-          actions={<Toggle checked={isActive} onChange={setIsActive} />}
+          actions={(
+            <div className="flex items-center gap-3">
+              <Toggle checked={isActive} onChange={setIsActive} />
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setShowDeleteModal(true)}
+                className="!px-3 !py-3 flex items-center justify-center !bg-transparent !border-0 hover:!bg-transparent"
+                aria-label="Etkinliği sil"
+              >
+                <HiOutlineTrash className="h-5 w-5 text-danger" />
+              </Button>
+            </div>
+          )}
         />
 
         <div className="max-w-3xl mx-auto">
-        <div className="bg-light p-4 rounded-lg shadow border border-dark-200">
+          <div className="bg-light p-4 rounded-lg shadow border border-dark-200">
         <Form 
           schema={eventSchema} 
           onSubmit={handleSubmit} 
@@ -221,8 +253,26 @@ export default function EditEventPage() {
             );
           }}
         </Form>
+          </div>
         </div>
-        </div>
+
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="Etkinliği Sil"
+        >
+          <p>
+            <strong>{event.name}</strong> etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Siliniyor...' : 'Sil'}
+            </Button>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
+              İptal
+            </Button>
+          </div>
+        </Modal>
       </div>
     </AppShell>
   );

@@ -44,6 +44,71 @@ export function UsersGridClient({ usersByGroup }: UsersGridClientProps) {
     return filtered;
   }, [usersByGroup, searchQuery]);
 
+  // Birleşik grupları hazırla (breakpoint'lere göre kullanacağız)
+  const mergedFor4Cols = useMemo(() => ({
+    ADMIN: filteredGroups.ADMIN,
+    YONETIM: filteredGroups.YONETIM,
+    ETKINLIK: [
+      ...(filteredGroups.AGC || []),
+      ...(filteredGroups.GECEKODU || []),
+      ...(filteredGroups.BIZBIZE || []),
+    ],
+    USER: filteredGroups.USER,
+  }), [filteredGroups]);
+
+  const mergedFor3Cols = useMemo(() => ({
+    YONETICI: [
+      ...(filteredGroups.ADMIN || []),
+      ...(filteredGroups.YONETIM || []),
+    ],
+    ETKINLIK: [
+      ...(filteredGroups.AGC || []),
+      ...(filteredGroups.GECEKODU || []),
+      ...(filteredGroups.BIZBIZE || []),
+    ],
+    USER: filteredGroups.USER,
+  }), [filteredGroups]);
+
+  const mergedFor2Cols = useMemo(() => ({
+    YETKILI: [
+      ...(filteredGroups.ADMIN || []),
+      ...(filteredGroups.YONETIM || []),
+      ...(filteredGroups.AGC || []),
+      ...(filteredGroups.GECEKODU || []),
+      ...(filteredGroups.BIZBIZE || []),
+    ],
+    USER: filteredGroups.USER,
+  }), [filteredGroups]);
+
+  const renderColumn = (title: string, users: UserDto[]) => (
+    <div key={title} className="space-y-2">
+      <div>
+        <h2 className="text-sm font-semibold text-dark-900 mb-1">{title}</h2>
+        <div className="border-b border-dark-200"></div>
+      </div>
+      <div className="space-y-1.5">
+        {users.length === 0 ? (
+          <p className="text-xs text-dark-400">Kullanıcı yok</p>
+        ) : (
+          users.map((user) => (
+            <Link
+              key={user.id}
+              href={`/users/${user.id}`}
+              className="block bg-light border border-dark-200 rounded-md px-2 py-1.5 hover:bg-brand-50 hover:border-brand transition-all cursor-pointer group min-w-0"
+            >
+              <div className="text-xs font-medium text-dark-900">
+                {user.firstName} {user.lastName}
+              </div>
+              <div className="text-[10px] text-dark-500 mt-0.5 truncate" title={user.email || ''}>
+                {user.email}
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Arama Kutusu */}
@@ -77,42 +142,30 @@ export function UsersGridClient({ usersByGroup }: UsersGridClientProps) {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-6 gap-4">
-        {groupOrder.map((group) => {
-          const users = filteredGroups[group] || [];
+      {/* 6 sütun (lg ve üstü) */}
+      <div className="hidden lg:grid grid-cols-6 gap-4">
+        {groupOrder.map((group) => renderColumn(groupLabels[group], filteredGroups[group] || []))}
+      </div>
 
-          return (
-            <div key={group} className="space-y-2">
-              <div>
-                <h2 className="text-sm font-semibold text-dark-900 mb-1">
-                  {groupLabels[group]}
-                </h2>
-                <div className="border-b border-dark-200"></div>
-              </div>
-              <div className="space-y-1.5">
-                {users.length === 0 ? (
-                  <p className="text-xs text-dark-400">Kullanıcı yok</p>
-                ) : (
-                  users.map((user) => (
-                    <Link
-                      key={user.id}
-                      href={`/users/${user.id}`}
-                      className="block bg-light border border-dark-200 rounded-md px-2 py-1.5 hover:bg-brand-50 hover:border-brand transition-all cursor-pointer group"
-                    >
-                      <div className="text-xs font-medium text-dark-900">
-                        {user.firstName} {user.lastName}
-                      </div>
-                      <div className="text-[10px] text-dark-500 mt-0.5">
-                        {user.email}
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* 4 sütun (md:lg arası) */}
+      <div className="hidden md:grid lg:hidden grid-cols-4 gap-4">
+        {renderColumn('Admin', mergedFor4Cols.ADMIN || [])}
+        {renderColumn('Yönetim', mergedFor4Cols.YONETIM || [])}
+        {renderColumn('Etkinlik', mergedFor4Cols.ETKINLIK || [])}
+        {renderColumn('Kullanıcı', mergedFor4Cols.USER || [])}
+      </div>
+
+      {/* 3 sütun (sm:md arası) */}
+      <div className="hidden sm:grid md:hidden grid-cols-3 gap-4">
+        {renderColumn('Yönetici', mergedFor3Cols.YONETICI || [])}
+        {renderColumn('Etkinlik', mergedFor3Cols.ETKINLIK || [])}
+        {renderColumn('Kullanıcı', mergedFor3Cols.USER || [])}
+      </div>
+
+      {/* 2 sütun (mobil) */}
+      <div className="grid sm:hidden grid-cols-2 gap-4">
+        {renderColumn('Yetkili', mergedFor2Cols.YETKILI || [])}
+        {renderColumn('Kullanıcı', mergedFor2Cols.USER || [])}
       </div>
     </div>
   );

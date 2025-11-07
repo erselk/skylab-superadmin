@@ -14,7 +14,11 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-dark bg-opacity-50" onClick={onClose} />
+      <div
+        className="fixed inset-0"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        onClick={onClose}
+      />
       <div className="relative bg-light rounded-lg shadow-xl max-w-md w-full mx-4 z-10 border border-dark-200">
         <div className="flex items-center justify-between p-6 border-b border-dark-200">
           <h2 className="text-xl font-bold text-brand">{title}</h2>

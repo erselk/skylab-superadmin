@@ -24,7 +24,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
     // İleriye dönük: burada bir log servisine gönderebiliriz
-    // console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (typeof window !== 'undefined') {
+      const message = error instanceof Error ? error.message : 'Bilinmeyen bir hata';
+      window.dispatchEvent(new CustomEvent('frontend-error', { detail: { message } }));
+    }
   }
 
   render() {
