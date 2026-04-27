@@ -88,18 +88,42 @@ class ApiClient {
     if (!response.ok) {
       // 401 Unauthorized durumunda token geçersiz demektir
       if (response.status === 401) {
-        // Token geçersizse temizle ve logout yap
-        this.clearToken();
-        // Logout endpoint'ini çağır (cookie'leri temizlemek için)
-        if (typeof window !== 'undefined') {
-          fetch('/api/auth/logout', {
-            method: 'POST',
-            credentials: 'include',
-          }).catch(() => {
-            // Logout başarısız olsa bile devam et
-          });
-          // Login sayfasına yönlendir
-          window.location.href = '/login';
+        // Önce sessizce token yenileyip aynı isteği bir kez daha deneyelim.
+        const refreshed = await this.tryRefreshToken();
+        if (refreshed) {
+          try {
+            response = await fetch(url, {
+              ...options,
+              credentials: 'include',
+              headers: {
+                ...this.getHeaders(),
+                ...options.headers,
+              },
+            });
+          } catch (retryErr) {
+            if (typeof window !== 'undefined') {
+              const message =
+                retryErr instanceof Error
+                  ? retryErr.message
+                  : 'Ağ/bağlantı hatası (yeniden deneme)';
+              window.dispatchEvent(new CustomEvent('backend-error', { detail: { message } }));
+            }
+            throw retryErr;
+          }
+        }
+
+        if (!response.ok && response.status === 401) {
+          // Hala 401 ise gerçek oturum kaybı kabul et.
+          this.clearToken();
+          if (typeof window !== 'undefined') {
+            fetch('/api/auth/logout', {
+              method: 'POST',
+              credentials: 'include',
+            }).catch(() => {
+              // Logout başarısız olsa bile devam et
+            });
+            window.location.href = '/login';
+          }
         }
       }
       // 4xx (401/403 hariç) ve 5xx durumlarını backend hatası olarak yayınla
@@ -152,6 +176,23 @@ class ApiClient {
     } catch {
       // Beklenmedik plain text vs. gelirse yine de anlamlı bir obje dönelim
       return { message: text } as unknown as T;
+    }
+  }
+
+  private async tryRefreshToken(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    try {
+      const tokenResponse = await fetch('/api/auth/token', {
+        credentials: 'include',
+      });
+      if (!tokenResponse.ok) return false;
+
+      const { token } = await tokenResponse.json();
+      if (!token) return false;
+      this.token = token;
+      return true;
+    } catch {
+      return false;
     }
   }
 

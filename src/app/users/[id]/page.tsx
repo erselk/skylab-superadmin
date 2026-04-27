@@ -17,7 +17,7 @@ export default function UserDetailPage() {
   const [user, setUser] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [availableRoles] = useState<string[]>(ALLOWED_ROLES);
+  const [availableRoles] = useState<string[]>([...ALLOWED_ROLES]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editData, setEditData] = useState<UpdateUserRequest>({
     firstName: '',

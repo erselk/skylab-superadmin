@@ -1,18 +1,49 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTokenFromCookies } from '@/lib/auth/token';
+import { refreshAccessToken } from '@/lib/auth/oauth2';
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = getTokenFromCookies(cookieStore);
 
-    if (!token) {
+    if (token) {
+      // Mevcut access token varsa direkt döndür.
+      return NextResponse.json({ token });
+    }
+
+    // Access token yoksa refresh token ile sessizce yenilemeyi dene.
+    const refreshToken = cookieStore.get('refresh_token')?.value;
+    if (!refreshToken) {
       return NextResponse.json({ token: null }, { status: 401 });
     }
 
-    // Token'ı client'a gönder (güvenlik için sadece token'ı gönderiyoruz)
-    return NextResponse.json({ token });
+    const { access_token, refresh_token } = await refreshAccessToken(refreshToken);
+
+    cookieStore.set('auth_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+    cookieStore.set('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+    cookieStore.set('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    });
+
+    return NextResponse.json({ token: access_token });
   } catch (error) {
     return NextResponse.json({ token: null }, { status: 401 });
   }

@@ -111,10 +111,7 @@ export default function MediaPage() {
               disabled={isUploading}
             />
             <label htmlFor="media-upload">
-              <Button
-                as="span"
-                className={isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-              >
+              <Button className={isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}>
                 {isUploading ? 'Yükleniyor...' : 'Dosya Yükle'}
               </Button>
             </label>

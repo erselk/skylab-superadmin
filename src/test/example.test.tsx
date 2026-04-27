@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import React from 'react';
 
 function DummyComponent() {
@@ -7,7 +7,7 @@ function DummyComponent() {
 
 describe('DummyComponent', () => {
   it('mesajı render eder', () => {
-    render(<DummyComponent />);
-    expect(screen.getByText('Test bileşeni')).toBeInTheDocument();
+    const { getByText } = render(<DummyComponent />);
+    expect(getByText('Test bileşeni')).toBeTruthy();
   });
 });

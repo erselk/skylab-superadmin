@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import type { DataResult, UserDto } from '@/types/api';
 import { getTokenFromCookies } from '@/lib/auth/token';
+import { refreshAccessToken } from '@/lib/auth/oauth2';
+
+async function fetchCurrentUser(token: string): Promise<Response> {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.yildizskylab.com';
+  return fetch(`${API_BASE_URL}/api/users/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const token = getTokenFromCookies(cookieStore);
+    let token = getTokenFromCookies(cookieStore);
 
     if (!token) {
       console.log('⚠️ /api/auth/me: Token bulunamadı');
@@ -14,15 +25,44 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ /api/auth/me: Token bulundu, uzunluk:', token.length);
+    let response = await fetchCurrentUser(token);
 
-    // Token geçerliliğini backend'de kontrol et
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.yildizskylab.com';
-    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Access token süresi dolduysa refresh token ile yenile ve bir kez daha dene.
+    if (response.status === 401) {
+      const refreshToken = cookieStore.get('refresh_token')?.value;
+      if (refreshToken) {
+        try {
+          const refreshed = await refreshAccessToken(refreshToken);
+          token = refreshed.access_token;
+
+          cookieStore.set('auth_token', refreshed.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+          });
+          cookieStore.set('access_token', refreshed.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+          });
+          cookieStore.set('refresh_token', refreshed.refresh_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30,
+            path: '/',
+          });
+
+          response = await fetchCurrentUser(token);
+        } catch (refreshError) {
+          console.error('❌ /api/auth/me: Token refresh başarısız:', refreshError);
+        }
+      }
+    }
 
     if (!response.ok) {
       // 502 Bad Gateway - Backend'e erişilemiyor

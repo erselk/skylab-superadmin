@@ -231,7 +231,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               linkedin: event.linkedin || '',
               seasonId: event.season?.id || '',
               prizeInfo: event.prizeInfo || '',
-              competitionId: event.competitionId || '',
+              competitionId: event.competition?.id || '',
               coverImage: undefined,
             }}
           >
