@@ -7,7 +7,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
 import { TextField } from '@/components/forms/TextField';
 import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/forms/Checkbox';
 import { z } from 'zod';
 import { eventTypesApi } from '@/lib/api/event-types';
 import type { EventTypeDto, UserDto } from '@/types/api';
@@ -23,18 +22,28 @@ const eventTypeSchema = z.object({
 });
 
 const DEFAULT_AUTHORIZED_ROLES = ['ADMIN', 'YK', 'DK'];
+const coordinatorsCache = new Map<string, UserDto[]>();
 
 function CoordinatorsList({ eventTypeName }: { eventTypeName: string }) {
-  const [coordinators, setCoordinators] = useState<UserDto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = coordinatorsCache.get(eventTypeName) || [];
+  const [coordinators, setCoordinators] = useState<UserDto[]>(cached);
+  const [loading, setLoading] = useState(cached.length === 0);
 
   useEffect(() => {
+    const cachedCoordinators = coordinatorsCache.get(eventTypeName);
+    if (cachedCoordinators) {
+      setCoordinators(cachedCoordinators);
+      setLoading(false);
+      return;
+    }
+
     eventTypesApi
       .getCoordinators(eventTypeName)
       .then((res) => {
         if (res.success && res.data) {
           // data is UserDto[]
           setCoordinators(res.data);
+          coordinatorsCache.set(eventTypeName, res.data);
         }
         setLoading(false);
       })
@@ -53,15 +62,9 @@ function CoordinatorsList({ eventTypeName }: { eventTypeName: string }) {
   return (
     <ul className="space-y-2">
       {coordinators.map((user) => (
-        <li
-          key={user.id}
-          className="bg-light border-dark-100 flex items-center gap-3 rounded-md border p-3"
-        >
-          <div className="flex-1">
-            <div className="text-dark-900 font-medium">
-              {user.firstName} {user.lastName}
-            </div>
-            <div className="text-dark-500 text-xs">{user.email}</div>
+        <li key={user.id} className="bg-light border-dark-100 rounded-md border p-3">
+          <div className="text-dark-900 text-sm font-medium">
+            {user.firstName} {user.lastName}
           </div>
         </li>
       ))}
@@ -177,13 +180,7 @@ export default function EditEventTypePage() {
         }
       />
 
-      {/* Coordinators Section */}
-      <div className="mx-auto mb-8 max-w-2xl">
-        <h3 className="text-dark-800 mb-4 text-lg font-semibold">Koordinatörler</h3>
-        <CoordinatorsList eventTypeName={eventType.name} />
-      </div>
-
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:items-start">
         <Form
           schema={eventTypeSchema}
           onSubmit={handleSubmit}
@@ -250,6 +247,11 @@ export default function EditEventTypePage() {
             );
           }}
         </Form>
+
+        <aside className="bg-light border-dark-200 rounded-lg border p-4 shadow-sm">
+          <h3 className="text-dark-800 mb-4 text-base font-semibold">Koordinatörler</h3>
+          <CoordinatorsList eventTypeName={eventType.name} />
+        </aside>
       </div>
       <Modal
         isOpen={showDeleteModal}

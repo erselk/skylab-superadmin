@@ -14,16 +14,10 @@ class ApiClient {
 
   setToken(token: string) {
     this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-    }
   }
 
   clearToken() {
     this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-    }
   }
 
   getHeaders(): HeadersInit {
@@ -31,9 +25,8 @@ class ApiClient {
       'Content-Type': 'application/json',
     };
 
-    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     return headers;
@@ -49,18 +42,15 @@ class ApiClient {
       'season.not.found': 'Sezon bulunamadı.',
       'competitor.not.found': 'Yarışmacı bulunamadı.',
       'method.not.allowed': 'Bu işlem şu anda desteklenmiyor.',
-      'forbidden': 'Bu işlem için yetkiniz yok.',
-      'unauthorized': 'Oturum süreniz dolmuş olabilir. Lütfen tekrar giriş yapın.',
+      forbidden: 'Bu işlem için yetkiniz yok.',
+      unauthorized: 'Oturum süreniz dolmuş olabilir. Lütfen tekrar giriş yapın.',
     };
     return map[key] || message;
   }
 
-  async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     // Client-side'da token'ı cookie'den almak için API endpoint'ini kullan
-    if (typeof window !== 'undefined' && !this.token && !localStorage.getItem('auth_token')) {
+    if (typeof window !== 'undefined' && !this.token) {
       try {
         const tokenResponse = await fetch('/api/auth/token', {
           credentials: 'include',
@@ -69,7 +59,6 @@ class ApiClient {
           const { token } = await tokenResponse.json();
           if (token) {
             this.token = token;
-            localStorage.setItem('auth_token', token);
           }
         }
       } catch (error) {
@@ -114,14 +103,16 @@ class ApiClient {
         }
       }
       // 4xx (401/403 hariç) ve 5xx durumlarını backend hatası olarak yayınla
-      if ((response.status >= 400 && response.status !== 401 && response.status !== 403)) {
+      if (response.status >= 400 && response.status !== 401 && response.status !== 403) {
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${response.status}` } }));
+          window.dispatchEvent(
+            new CustomEvent('backend-error', { detail: { message: `HTTP ${response.status}` } }),
+          );
         }
       }
-      // Hata gövdesi boş olabilir; güvenle okumak için text() üzerinden ilerleyelim
       const errorText = await response.text().catch(() => '');
-      let errorPayload: any = { message: 'Bir hata oluştu' };
+      let errorPayload: any = { message: `HTTP ${response.status}` };
+
       if (errorText && errorText.trim() !== '') {
         try {
           errorPayload = JSON.parse(errorText);
@@ -129,6 +120,20 @@ class ApiClient {
           errorPayload = { message: errorText };
         }
       }
+
+      // 404 durumunda veya "not.found" mesajı gelirse GET istekleri için sessizce boş veri dön
+      if (
+        options.method === 'GET' &&
+        (response.status === 404 ||
+          (errorPayload.message && errorPayload.message.includes('not.found')))
+      ) {
+        return {
+          data: [],
+          success: true,
+          message: errorPayload.message || 'Bulunamadı',
+        } as unknown as T;
+      }
+
       const error = errorPayload;
       const mapped = this.mapErrorMessage(error.message);
       throw new Error(mapped || `HTTP ${response.status}`);
@@ -147,6 +152,19 @@ class ApiClient {
     } catch {
       // Beklenmedik plain text vs. gelirse yine de anlamlı bir obje dönelim
       return { message: text } as unknown as T;
+    }
+  }
+
+  private async ensureToken(): Promise<void> {
+    if (typeof window === 'undefined' || this.token) return;
+    try {
+      const tokenResponse = await fetch('/api/auth/token', { credentials: 'include' });
+      if (tokenResponse.ok) {
+        const { token } = await tokenResponse.json();
+        if (token) this.token = token;
+      }
+    } catch {
+      // Token okunamazsa backend tarafi 401/403 dondurecek.
     }
   }
 
@@ -183,98 +201,103 @@ class ApiClient {
   }
 
   postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    return this.ensureToken().then(() => {
+      const headers: HeadersInit = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
 
-    return fetch(`${this._baseURL}${endpoint}`, {
-      method: 'POST',
-      credentials: 'include', // Cookie'lerin gönderilmesi için
-      headers,
-      body: formData,
-    }).then(res => {
-      if (!res.ok) {
-        if (res.status >= 500 && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }));
-        }
-        // 401 Unauthorized durumunda token geçersiz demektir
-        if (res.status === 401) {
-          this.clearToken();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+      return fetch(`${this._baseURL}${endpoint}`, {
+        method: 'POST',
+        credentials: 'include', // Cookie'lerin gönderilmesi için
+        headers,
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) {
+          if (res.status >= 500 && typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }),
+            );
           }
+          // 401 Unauthorized durumunda token geçersiz demektir
+          if (res.status === 401) {
+            this.clearToken();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+          }
+          return res.text().then((txt) => {
+            try {
+              const err = txt ? JSON.parse(txt) : { message: `HTTP ${res.status}` };
+              const mapped = this.mapErrorMessage(err.message);
+              throw new Error(mapped || `HTTP ${res.status}`);
+            } catch {
+              const mapped = this.mapErrorMessage(txt);
+              throw new Error(mapped || `HTTP ${res.status}`);
+            }
+          });
         }
-        return res.text().then(txt => {
+        if (res.status === 204) return {} as T;
+        return res.text().then((txt) => {
+          if (!txt || txt.trim() === '') return {} as T;
           try {
-            const err = txt ? JSON.parse(txt) : { message: `HTTP ${res.status}` };
-            const mapped = this.mapErrorMessage(err.message);
-            throw new Error(mapped || `HTTP ${res.status}`);
+            return JSON.parse(txt) as T;
           } catch {
-            const mapped = this.mapErrorMessage(txt);
-            throw new Error(mapped || `HTTP ${res.status}`);
+            return { message: txt } as unknown as T;
           }
         });
-      }
-      if (res.status === 204) return {} as T;
-      return res.text().then(txt => {
-        if (!txt || txt.trim() === '') return {} as T;
-        try {
-          return JSON.parse(txt) as T;
-        } catch {
-          return { message: txt } as unknown as T;
-        }
       });
     });
   }
 
   putFormData<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = this.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    return this.ensureToken().then(() => {
+      const headers: HeadersInit = {};
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
 
-    return fetch(`${this._baseURL}${endpoint}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers,
-      body: formData,
-    }).then(res => {
-      if (!res.ok) {
-        if (res.status >= 500 && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }));
-        }
-        if (res.status === 401) {
-          this.clearToken();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+      return fetch(`${this._baseURL}${endpoint}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers,
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) {
+          if (res.status >= 500 && typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('backend-error', { detail: { message: `HTTP ${res.status}` } }),
+            );
           }
+          if (res.status === 401) {
+            this.clearToken();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+          }
+          return res.text().then((txt) => {
+            try {
+              const err = txt ? JSON.parse(txt) : { message: `HTTP ${res.status}` };
+              const mapped = this.mapErrorMessage(err.message);
+              throw new Error(mapped || `HTTP ${res.status}`);
+            } catch {
+              const mapped = this.mapErrorMessage(txt);
+              throw new Error(mapped || `HTTP ${res.status}`);
+            }
+          });
         }
-        return res.text().then(txt => {
+        if (res.status === 204) return {} as T;
+        return res.text().then((txt) => {
+          if (!txt || txt.trim() === '') return {} as T;
           try {
-            const err = txt ? JSON.parse(txt) : { message: `HTTP ${res.status}` };
-            const mapped = this.mapErrorMessage(err.message);
-            throw new Error(mapped || `HTTP ${res.status}`);
+            return JSON.parse(txt) as T;
           } catch {
-            const mapped = this.mapErrorMessage(txt);
-            throw new Error(mapped || `HTTP ${res.status}`);
+            return { message: txt } as unknown as T;
           }
         });
-      }
-      if (res.status === 204) return {} as T;
-      return res.text().then(txt => {
-        if (!txt || txt.trim() === '') return {} as T;
-        try {
-          return JSON.parse(txt) as T;
-        } catch {
-          return { message: txt } as unknown as T;
-        }
       });
     });
   }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
-

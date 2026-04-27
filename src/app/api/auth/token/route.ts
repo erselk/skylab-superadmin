@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getTokenFromCookies } from '@/lib/auth/token';
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = getTokenFromCookies(cookieStore);
 
     if (!token) {
       return NextResponse.json({ token: null }, { status: 401 });
@@ -16,4 +17,3 @@ export async function GET() {
     return NextResponse.json({ token: null }, { status: 401 });
   }
 }
-

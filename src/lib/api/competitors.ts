@@ -9,26 +9,16 @@ import type {
 } from '@/types/api';
 
 export const competitorsApi = {
-  async getAll(params?: { includeUser?: boolean; includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultListCompetitorDto>(`/api/competitors/${qs ? `?${qs}` : ''}`);
+  async getAll() {
+    return apiClient.get<DataResultListCompetitorDto>('/api/competitors');
   },
 
-  async getById(id: string, params?: { includeUser?: boolean; includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultCompetitorDto>(`/api/competitors/${id}${qs ? `?${qs}` : ''}`);
+  async getById(id: string) {
+    return apiClient.get<DataResultCompetitorDto>(`/api/competitors/${id}`);
   },
 
   async create(data: CreateCompetitorRequest) {
-    return apiClient.post<DataResultCompetitorDto>('/api/competitors/', data);
+    return apiClient.post<DataResultCompetitorDto>('/api/competitors', data);
   },
 
   async update(id: string, data: UpdateCompetitorRequest) {
@@ -39,72 +29,36 @@ export const competitorsApi = {
     return apiClient.delete<Result>(`/api/competitors/${id}`);
   },
 
-  async getMy(params?: { includeUser?: boolean; includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultListCompetitorDto>(`/api/competitors/my${qs ? `?${qs}` : ''}`);
+  async getMy() {
+    return apiClient.get<DataResultListCompetitorDto>('/api/competitors/my');
   },
 
-  async getByUserId(userId: string, params?: { includeUser?: boolean; includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultListCompetitorDto>(
-      `/api/competitors/user/${userId}${qs ? `?${qs}` : ''}`,
-    );
+  // NOTE: Bu iki endpoint Postman koleksiyonunda yok.
+  // Yanlis endpoint'e istek gitmesini engellemek icin bilincli olarak hata firlatiyoruz.
+  async getByUserId(_userId: string, _params?: { includeUser?: boolean; includeEvent?: boolean }) {
+    throw new Error('getByUserId endpointi API sozlesmesinde tanimli degil');
   },
 
-  async getByEventId(eventId: string, params?: { includeUser?: boolean; includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultListCompetitorDto>(
-      `/api/competitors/event/${eventId}${qs ? `?${qs}` : ''}`,
-    );
-  },
-
-  async getLeaderboard(
-    eventTypeName: string,
-    params?: { includeUser?: boolean; includeEvent?: boolean },
+  async getByEventId(
+    _eventId: string,
+    _params?: { includeUser?: boolean; includeEvent?: boolean },
   ) {
-    const query = new URLSearchParams();
-    query.set('eventTypeName', eventTypeName);
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
+    throw new Error('getByEventId endpointi API sozlesmesinde tanimli degil');
+  },
+
+  async getLeaderboard(eventTypeName: string) {
     return apiClient.get<DataResultListLeaderboardDto>(
-      `/api/competitors/leaderboard${qs ? `?${qs}` : ''}`,
+      `/api/competitors/leaderboard/type/${encodeURIComponent(eventTypeName)}`,
     );
   },
 
   async getSeasonLeaderboard(seasonId: string, eventTypeName: string) {
-    const query = new URLSearchParams();
-    query.set('eventTypeName', eventTypeName);
-    const qs = query.toString();
     return apiClient.get<DataResultListLeaderboardDto>(
-      `/api/competitors/leaderboard/season/${seasonId}${qs ? `?${qs}` : ''}`,
+      `/api/competitors/leaderboard/season/${seasonId}/type/${encodeURIComponent(eventTypeName)}`,
     );
   },
 
-  async getEventWinner(
-    eventId: string,
-    params?: { includeUser?: boolean; includeEvent?: boolean },
-  ) {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultCompetitorDto>(
-      `/api/competitors/event/${eventId}/winner${qs ? `?${qs}` : ''}`,
-    );
+  async getEventWinner(eventId: string) {
+    return apiClient.get<DataResultCompetitorDto>(`/api/events/${eventId}/competitors/winner`);
   },
 };

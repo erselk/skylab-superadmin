@@ -3,11 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
 import { eventsApi } from '@/lib/api/events';
-import { imagesApi } from '@/lib/api/images';
-import Link from 'next/link';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 
 export default function ImagesPage() {
   const [loading, setLoading] = useState(true);
@@ -25,7 +23,7 @@ export default function ImagesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await eventsApi.getAll({ includeImages: true });
+      const res = await eventsApi.getAll();
       const list = (res.data || []).flatMap((ev) => {
         const fromCover = ev.coverImageUrl
           ? [{ url: ev.coverImageUrl, name: `${ev.name} - kapak` }]
@@ -33,16 +31,7 @@ export default function ImagesPage() {
         const fromImages = (ev.imageUrls || []).map((u) => ({ url: u, name: ev.name }));
         return [...fromCover, ...fromImages];
       });
-      // LocalStorage'dan yüklenen görselleri ekle
-      let uploaded: { url: string; name?: string; id?: string }[] = [];
-      try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('uploaded_images') : null;
-        if (raw) {
-          const parsed: { id: string; fileUrl: string; fileName: string }[] = JSON.parse(raw);
-          uploaded = parsed.map((p) => ({ url: p.fileUrl, name: p.fileName, id: p.id }));
-        }
-      } catch {}
-      const combined = [...uploaded, ...list];
+      const combined = [...list];
       // URL'e göre tekrarlı olanları kaldır
       const seen = new Set<string>();
       const unique = combined.filter((it) => {
@@ -55,26 +44,6 @@ export default function ImagesPage() {
       setError(e?.message || 'Görseller yüklenemedi');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id?: string, url?: string) => {
-    if (!id) return; // yalnızca bizim yüklediklerimizi silebiliriz
-    const ok = window.confirm('Bu resmi silmek istediğinize emin misiniz?');
-    if (!ok) return;
-    try {
-      await imagesApi.delete(id);
-      try {
-        const raw = localStorage.getItem('uploaded_images');
-        if (raw) {
-          const parsed: { id: string; fileUrl: string; fileName: string }[] = JSON.parse(raw);
-          const next = parsed.filter((p) => p.id !== id && p.fileUrl !== url);
-          localStorage.setItem('uploaded_images', JSON.stringify(next));
-        }
-      } catch {}
-      setImages((prev) => prev.filter((img) => img.id !== id));
-    } catch (e) {
-      alert('Silme işlemi başarısız');
     }
   };
 
@@ -115,32 +84,10 @@ export default function ImagesPage() {
   }, [images, search]);
 
   const totalCount = images.length;
-  const uploadedCount = images.filter((img) => Boolean(img.id)).length;
-
   return (
     <>
       <div className="space-y-6">
-        <PageHeader
-          title="Resimler"
-          description="Yüklenen tüm görselleri görüntüleyin ve yönetin"
-          actions={
-            <Link href="/images/new">
-              <Button>
-                <span className="flex items-center gap-2">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Yeni Resim
-                </span>
-              </Button>
-            </Link>
-          }
-        />
+        <PageHeader title="Resimler" description="Etkinliklere ait tüm görselleri görüntüleyin" />
 
         {error && (
           <div className="bg-light border-dark-200 text-dark mb-6 rounded-lg border p-4">
@@ -152,11 +99,6 @@ export default function ImagesPage() {
           <div>
             <p className="text-dark-600 text-sm">Toplam Görsel</p>
             <p className="text-brand text-2xl font-semibold">{totalCount}</p>
-          </div>
-          <div className="bg-dark-200/70 hidden h-10 w-px sm:block" />
-          <div>
-            <p className="text-dark-600 text-sm">Panel Üzerinden Yüklenenler</p>
-            <p className="text-brand text-2xl font-semibold">{uploadedCount}</p>
           </div>
           <div className="bg-dark-200/70 hidden h-10 w-px sm:block" />
           <div className="w-full sm:w-1/2">
@@ -252,24 +194,10 @@ export default function ImagesPage() {
                   {previewImage.url}
                 </a>
               </div>
-              <div className="text-dark-500">
-                Kaynak: {previewImage.id ? 'Panel Yüklemesi' : 'Etkinlik'}
-              </div>
+              <div className="text-dark-500">Kaynak: Etkinlik</div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                {previewImage.id && (
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      handleDelete(previewImage.id, previewImage.url);
-                      setPreviewImage(null);
-                    }}
-                  >
-                    Sil
-                  </Button>
-                )}
-              </div>
+              <div className="flex items-center gap-2" />
               <div className="flex items-center gap-2">
                 <Button onClick={() => handleDownload(previewImage.url)}>İndir</Button>
               </div>

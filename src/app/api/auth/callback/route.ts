@@ -36,6 +36,14 @@ export async function GET(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
+    // Farkli ortamlarda cookie anahtari degisse bile token okuma bozulmasin.
+    cookieStore.set('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
 
     cookieStore.set('refresh_token', refresh_token, {
       httpOnly: true,

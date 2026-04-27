@@ -10,37 +10,21 @@ import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
 import { EventsGridClient } from './EventsGridClient';
 import { getLeaderEventType } from '@/lib/utils/permissions';
+import { useAuth } from '@/context/AuthContext';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<EventDto[]>([]);
   const [eventTypeOrder, setEventTypeOrder] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
-
-  useEffect(() => {
-    // Fetch user first
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        } else {
-          setCurrentUser({} as UserDto);
-        }
-      })
-      .catch((err) => {
-        console.error('User fetch error:', err);
-        setCurrentUser({} as UserDto);
-      });
-  }, []);
+  const { user: currentUser } = useAuth();
 
   const loadEvents = async () => {
     setLoading(true);
     setError(null);
     try {
       const [eventsResponse, eventTypesResponse] = await Promise.all([
-        eventsApi.getAll({ includeEventType: true }),
+        eventsApi.getAll(),
         eventTypesApi.getAll(),
       ]);
 
@@ -74,9 +58,7 @@ export default function EventsPage() {
   };
 
   useEffect(() => {
-    if (currentUser !== null) {
-      loadEvents();
-    }
+    loadEvents();
   }, [currentUser]);
 
   return (

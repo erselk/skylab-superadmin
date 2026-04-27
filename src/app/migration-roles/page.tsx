@@ -3,14 +3,22 @@
 import { useEffect, useState } from 'react';
 import { eventTypesApi } from '@/lib/api/event-types';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/context/AuthContext';
+import { isSuperAdmin } from '@/lib/utils/permissions';
 
 export default function MigrationPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle');
+  const { user, loading } = useAuth();
 
   const addLog = (msg: string) => setLogs((prev) => [...prev, msg]);
 
   const runMigration = async () => {
+    if (!isSuperAdmin(user)) {
+      addLog('Bu sayfayi sadece super admin calistirabilir.');
+      return;
+    }
+
     setStatus('running');
     addLog('Starting migration...');
 
@@ -64,8 +72,16 @@ export default function MigrationPage() {
   return (
     <div className="mx-auto max-w-2xl p-8">
       <h1 className="mb-4 text-2xl font-bold">Role Migration Script</h1>
+      {!loading && !isSuperAdmin(user) && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          Bu alana sadece ADMIN/YK/DK rolleri erisebilir.
+        </div>
+      )}
       <div className="mb-4">
-        <Button onClick={runMigration} disabled={status === 'running'}>
+        <Button
+          onClick={runMigration}
+          disabled={status === 'running' || loading || !isSuperAdmin(user)}
+        >
           {status === 'running' ? 'Running...' : 'Start Migration'}
         </Button>
       </div>

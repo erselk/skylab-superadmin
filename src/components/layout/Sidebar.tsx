@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   HiOutlineCalendar,
   HiOutlineCalendarDays,
   HiOutlineChartBar,
   HiOutlineMegaphone,
   HiOutlineMicrophone,
-  HiOutlinePhoto,
   HiOutlineQrCode,
   HiOutlineTag,
   HiOutlineUser,
@@ -17,8 +16,8 @@ import {
   HiOutlinePuzzlePiece,
   HiOutlineArrowRightOnRectangle,
 } from 'react-icons/hi2';
-import { canAccessPage } from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
+import type { UserDto } from '@/types/api';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: HiOutlineChartBar },
@@ -29,7 +28,6 @@ const menuItems = [
   { href: '/seasons', label: 'Sezonlar', icon: HiOutlineCalendarDays },
   { href: '/sessions', label: 'Oturumlar', icon: HiOutlineMicrophone },
   { href: '/announcements', label: 'Duyurular', icon: HiOutlineMegaphone },
-  { href: '/images', label: 'Resimler', icon: HiOutlinePhoto },
   { href: '/qr', label: 'QR Kodlar', icon: HiOutlineQrCode },
   { href: '/waiting-room', label: 'Oyun Alanı', icon: HiOutlinePuzzlePiece },
 ];
@@ -41,9 +39,17 @@ type SidebarProps = {
 
 export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
+  const [stableUser, setStableUser] = useState<UserDto | null>(null);
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const effectiveUser = user ?? stableUser;
+
+  useEffect(() => {
+    if (user) {
+      setStableUser(user);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +57,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user');
+        sessionStorage.removeItem('auth_user');
         window.location.href = '/login';
       }
     } catch (error) {
@@ -66,13 +73,13 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   };
 
   const renderUserSection = (showDetails: boolean) => {
-    if (loading) {
+    if (!effectiveUser) {
       return (
         <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
           <div className="bg-dark-700 h-10 w-10 flex-shrink-0 animate-pulse rounded-full" />
           {showDetails && (
             <div className="min-w-0 flex-1">
-              <div className="bg-dark-700 mb-1.5 h-4 animate-pulse rounded" />
+              <div className="bg-dark-700 mb-1.5 h-4 w-3/4 animate-pulse rounded" />
               <div className="bg-dark-700 h-3 w-2/3 animate-pulse rounded" />
             </div>
           )}
@@ -80,20 +87,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
       );
     }
 
-    if (!user) {
-      return (
-        <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
-          <div className="bg-dark-700 h-10 w-10 flex-shrink-0 rounded-full" />
-          {showDetails && (
-            <div className="min-w-0 flex-1">
-              <p className="text-light/60 truncate text-xs">Kullanıcı bilgisi yüklenemedi</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const initials = user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U';
+    const initials =
+      effectiveUser.firstName?.[0]?.toUpperCase() ||
+      effectiveUser.username?.[0]?.toUpperCase() ||
+      'U';
 
     return (
       <div className="relative">
@@ -102,6 +99,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
             className={`border-dark-600 bg-dark-800 absolute bottom-full z-50 mb-2 overflow-hidden rounded-lg border shadow-xl ${showDetails ? 'right-0 left-0' : 'left-0 w-48'}`}
           >
             <button
+              type="button"
               onClick={handleLogout}
               className="hover:bg-dark-700 flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 transition-colors hover:text-red-300"
             >
@@ -111,15 +109,16 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
           </div>
         )}
         <button
+          type="button"
           onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
           className={`group hover:bg-dark-800 flex w-full items-center gap-3 rounded-lg p-2 transition-colors ${
             showDetails ? '' : 'justify-center'
           }`}
         >
-          {user.profilePictureUrl ? (
+          {effectiveUser.profilePictureUrl ? (
             <img
-              src={user.profilePictureUrl}
-              alt={`${user.firstName} ${user.lastName}`}
+              src={effectiveUser.profilePictureUrl}
+              alt={`${effectiveUser.firstName} ${effectiveUser.lastName}`}
               className="group-hover:ring-dark-600 h-10 w-10 flex-shrink-0 rounded-full object-cover ring-2 ring-transparent transition-all"
             />
           ) : (
@@ -130,11 +129,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
           {showDetails && (
             <div className="min-w-0 flex-1 text-left">
               <p className="text-light truncate text-sm font-medium">
-                {user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.username}
+                {effectiveUser.firstName && effectiveUser.lastName
+                  ? `${effectiveUser.firstName} ${effectiveUser.lastName}`
+                  : effectiveUser.username}
               </p>
-              <p className="text-light/60 truncate text-xs">{user.email}</p>
+              <p className="text-light/60 truncate text-xs">{effectiveUser.email}</p>
             </div>
           )}
         </button>
@@ -162,28 +161,26 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-2 py-4">
         <ul className="space-y-2">
-          {menuItems
-            .filter((item) => (user ? canAccessPage(user, item.href) : false))
-            .map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/dashboard' && pathname?.startsWith(item.href + '/'));
+          {menuItems.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/dashboard' && pathname?.startsWith(item.href + '/'));
 
-              const linkClasses = [
-                'flex items-center rounded-lg text-sm font-medium transition-colors',
-                showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
-                isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
-              ].join(' ');
+            const linkClasses = [
+              'flex items-center rounded-lg text-sm font-medium transition-colors',
+              showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
+              isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
+            ].join(' ');
 
-              return (
-                <li key={item.href}>
-                  <Link href={item.href} className={linkClasses} onClick={handleNavigate}>
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
-                    {showLabels && <span className="whitespace-nowrap">{item.label}</span>}
-                  </Link>
-                </li>
-              );
-            })}
+            return (
+              <li key={item.href}>
+                <Link href={item.href} className={linkClasses} onClick={handleNavigate}>
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  {showLabels && <span className="whitespace-nowrap">{item.label}</span>}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
@@ -194,7 +191,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   return (
     <>
       <aside
-        className={`bg-dark text-light hidden h-full flex-col transition-[width] duration-300 ease-out lg:flex ${
+        className={`bg-dark text-light hidden h-screen shrink-0 flex-col transition-[width] duration-300 ease-out lg:sticky lg:top-0 lg:flex ${
           isDesktopExpanded ? 'w-64' : 'w-20'
         }`}
         onMouseEnter={() => setIsDesktopExpanded(true)}

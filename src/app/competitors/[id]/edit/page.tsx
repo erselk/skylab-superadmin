@@ -14,7 +14,8 @@ import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
 import { eventsApi } from '@/lib/api/events';
 import { getLeaderEventType } from '@/lib/utils/permissions';
-import { UserDto, CompetitorDto } from '@/types/api';
+import { CompetitorDto } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
 
 import { Modal } from '@/components/ui/Modal';
 import { HiOutlineTrash } from 'react-icons/hi2';
@@ -38,27 +39,13 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<{ value: string; label: string }[]>([]);
   const [events, setEvents] = useState<{ value: string; label: string; type?: string }[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
+  const { user: currentUser } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    // Fetch user
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch((err) => console.error('User fetch error:', err));
-
     if (id) {
-      Promise.all([
-        competitorsApi.getById(id, { includeUser: true, includeEvent: true }),
-        usersApi.getAll(),
-        eventsApi.getAll({ includeEventType: true }),
-      ])
+      Promise.all([competitorsApi.getById(id), usersApi.getAll(), eventsApi.getAll()])
         .then(([competitorResponse, usersResponse, eventsResponse]) => {
           if (competitorResponse.success && competitorResponse.data) {
             setCompetitor(competitorResponse.data);

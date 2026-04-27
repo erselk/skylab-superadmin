@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { serverFetch } from '@/lib/api/server-client';
 import { canManageModule, getLeaderEventType, isSuperAdmin } from '@/lib/utils/permissions';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 import type {
   AnnouncementDto,
   EventDto,
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
     }
 
     // Events: All or Filtered
-    promises.push(getEvents({ includeEventType: true }).then((res) => ({ type: 'events', res })));
+    promises.push(getEvents().then((res) => ({ type: 'events', res })));
 
     // Announcements: Visible to all staff (except USER)
     // canManageModule('announcements') checks for ADMIN roles, but we want leaders to see them too.
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
     );
 
     // Sessions: All or Filtered
-    promises.push(getSessions({ includeEvent: true }).then((res) => ({ type: 'sessions', res })));
+    promises.push(getSessions().then((res) => ({ type: 'sessions', res })));
 
     const results = await Promise.allSettled(promises);
 
@@ -433,10 +433,9 @@ export default async function DashboardPage() {
               </div>
             ) : (
               upcomingSessions.map((session) => (
-                <Link
+                <div
                   key={session.id}
-                  href={`/sessions/${session.id}/edit`}
-                  className="border-dark-200 hover:border-brand/60 hover:bg-brand-50/40 flex flex-col gap-2.5 rounded-lg border bg-white/60 p-3 transition"
+                  className="border-dark-200 flex flex-col gap-2.5 rounded-lg border bg-white/60 p-3 transition"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
@@ -488,7 +487,7 @@ export default async function DashboardPage() {
                       </div>
                     )}
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>
@@ -505,11 +504,6 @@ export default async function DashboardPage() {
 
         <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            {
-              href: '/users/new',
-              title: 'Yeni Kullanıcı',
-              description: 'Ekibinize yeni bir kişi ekleyin',
-            },
             {
               href: '/events/new',
               title: 'Etkinlik Oluştur',

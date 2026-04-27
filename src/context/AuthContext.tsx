@@ -1,8 +1,18 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+  useCallback,
+  useLayoutEffect,
+} from 'react';
 import type { UserDto } from '@/types/api';
 import { useRouter, usePathname } from 'next/navigation';
+import { canAccessPage, hasOnlyUserRole } from '@/lib/utils/permissions';
 
 interface AuthContextType {
   user: UserDto | null;
@@ -12,17 +22,34 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_USER_STORAGE_KEY = 'auth_user';
+let memoryUserCache: UserDto | null = null;
+let memoryAuthBootstrapped = false;
+
+function readCachedUser(): UserDto | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as UserDto;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserDto | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserDto | null>(memoryUserCache);
+  const [loading, setLoading] = useState(!memoryAuthBootstrapped && !memoryUserCache);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const didInit = useRef(false);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
-      // setLoading(true); // Don't set loading to true on refresh to avoid flickering
+      if (!user) {
+        setLoading(true);
+      }
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
       });
@@ -31,35 +58,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         if (data.authenticated && data.user) {
           setUser(data.user);
+          memoryUserCache = data.user;
+          memoryAuthBootstrapped = true;
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(data.user));
+          }
           setError(null);
         } else {
           setUser(null);
-          // If not authenticated and not on login page, redirect might be handled by middleware or component
+          memoryUserCache = null;
+          memoryAuthBootstrapped = true;
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
+          }
         }
       } else {
         setUser(null);
+        memoryUserCache = null;
+        memoryAuthBootstrapped = true;
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
+        }
         setError('Kullanıcı bilgileri alınamadı');
       }
     } catch (err) {
       console.error('Auth fetch error:', err);
       setError('Bağlantı hatası');
       setUser(null);
+      memoryUserCache = null;
+      memoryAuthBootstrapped = true;
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // İlk client render ile server render uyumlu olsun diye cache'i mount'tan sonra oku.
+    if (didInit.current) return;
+    didInit.current = true;
+
+    const cachedUser = readCachedUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+      memoryUserCache = cachedUser;
+      memoryAuthBootstrapped = true;
+      setLoading(false);
+      return;
+    }
+
+    if (memoryAuthBootstrapped) {
+      setLoading(false);
+      return;
+    }
+
     fetchUser();
-  }, []);
+  }, [fetchUser]);
 
-  // Redirect logic for basic users
   useEffect(() => {
-    if (!loading && user) {
-      const isBasicUser = user.roles.length === 1 && user.roles[0] === 'USER';
-      if (isBasicUser && pathname !== '/waiting-room' && !pathname?.startsWith('/api')) {
+    if (loading) return;
+
+    if (!user) {
+      if (pathname && !pathname.startsWith('/login')) {
+        router.replace('/login');
+      }
+      return;
+    }
+
+    if (hasOnlyUserRole(user)) {
+      if (pathname !== '/waiting-room') {
         router.replace('/waiting-room');
       }
+      return;
+    }
+
+    if (pathname && !pathname.startsWith('/login') && !canAccessPage(user, pathname)) {
+      router.replace('/dashboard');
     }
   }, [user, loading, pathname, router]);
 

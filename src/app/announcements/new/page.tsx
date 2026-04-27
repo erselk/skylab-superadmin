@@ -18,7 +18,7 @@ import { eventTypesApi } from '@/lib/api/event-types';
 const announcementSchema = z.object({
   title: z.string().min(2, 'En az 2 karakter olmalı'),
   body: z.string().min(2, 'En az 2 karakter olmalı'),
-  active: z.boolean().optional(),
+  active: z.boolean().default(true),
   eventTypeId: z.string().min(1, 'Etkinlik tipi seçiniz'),
   formUrl: z.string().url().optional().or(z.literal('')),
   coverImage: z
@@ -50,7 +50,7 @@ export default function NewAnnouncementPage() {
         const announcementData = {
           title: data.title,
           body: data.body,
-          active: true,
+          active: data.active,
           eventTypeId: data.eventTypeId,
           formUrl: data.formUrl || undefined,
         };
@@ -133,6 +133,9 @@ export default function NewAnnouncementPage() {
                           placeholder="https://forms.google.com/..."
                         />
                         <FileUpload name="coverImage" label="Kapak Resmi" accept="image/*" />
+                        <div className="flex items-center pt-6">
+                          <Checkbox name="active" label="Aktif mi?" />
+                        </div>
                       </div>
                     </div>
                   </div>

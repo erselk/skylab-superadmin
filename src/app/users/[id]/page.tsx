@@ -5,10 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
-// import { Modal } from '@/components/ui/Modal';
+import { Modal } from '@/components/ui/Modal';
 import { usersApi } from '@/lib/api/users';
 import type { UpdateUserRequest, UserDto } from '@/types/api';
-// Roller dinamik olarak /api/roles üzerinden yüklenecek
+import { ALLOWED_ROLES } from '@/config/roles';
 
 export default function UserDetailPage() {
   const router = useRouter();
@@ -17,8 +17,7 @@ export default function UserDetailPage() {
   const [user, setUser] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [availableRoles] = useState<string[]>(ALLOWED_ROLES);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editData, setEditData] = useState<UpdateUserRequest>({
     firstName: '',
@@ -27,8 +26,15 @@ export default function UserDetailPage() {
     university: '',
     faculty: '',
     department: '',
+    skyNumber: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [promoteData, setPromoteData] = useState({
+    targetRole: 'USER',
+    initialPassword: '',
+  });
+  const [isPromoting, setIsPromoting] = useState(false);
 
   const loadUser = async () => {
     setLoading(true);
@@ -44,8 +50,8 @@ export default function UserDetailPage() {
           university: response.data.university || '',
           faculty: response.data.faculty || '',
           department: response.data.department || '',
+          skyNumber: response.data.skyNumber || '',
         });
-        setSelectedRoles(response.data.roles || []);
       } else {
         setError('Kullanıcı bulunamadı');
       }
@@ -63,59 +69,11 @@ export default function UserDetailPage() {
     }
   }, [id]);
 
-  // Rolleri yükle
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/roles', { cache: 'no-store' });
-        const json = await res.json();
-        setAvailableRoles(Array.isArray(json?.roles) ? json.roles : []);
-      } catch {
-        setAvailableRoles([]);
-      }
-    })();
-  }, []);
-
   const handleSave = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
       await usersApi.update(user.id, editData);
-      // Role changes
-      const current = new Set(user.roles || []);
-      const selected = new Set(selectedRoles);
-      const toAdd: string[] = [];
-      const toRemove: string[] = [];
-      selected.forEach((r) => {
-        if (!current.has(r)) toAdd.push(r);
-      });
-      current.forEach((r) => {
-        if (!selected.has(r)) toRemove.push(r);
-      });
-
-      const failures: string[] = [];
-      for (const r of toAdd) {
-        try {
-          await usersApi.assignRole(user.username, r);
-        } catch (e: any) {
-          failures.push(`Rol eklenemedi (${r}): ${e?.message || 'bilinmeyen hata'}`);
-        }
-      }
-      for (const r of toRemove) {
-        try {
-          await usersApi.removeRole(user.username, r);
-        } catch (e: any) {
-          failures.push(`Rol kaldırılamadı (${r}): ${e?.message || 'bilinmeyen hata'}`);
-        }
-      }
-
-      if (failures.length > 0) {
-        alert(failures.join('\n'));
-        // Hatalar varsa sayfada kal ve yeniden denemeye izin ver
-        return;
-      }
-
-      // Başarılı ise önceki sayfaya dön
       router.back();
     } catch (err) {
       alert(
@@ -124,6 +82,31 @@ export default function UserDetailPage() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    if (!user || !promoteData.initialPassword) {
+      alert('Lütfen başlangıç şifresini giriniz.');
+      return;
+    }
+    setIsPromoting(true);
+    try {
+      const response = await usersApi.promote(user.id, {
+        targetRole: promoteData.targetRole,
+        initialPassword: promoteData.initialPassword,
+      });
+      if (response.success) {
+        alert("Kullanıcı başarıyla LDAP'a terfi ettirildi.");
+        setIsPromoteModalOpen(false);
+        loadUser(); // Veriyi yenile
+      } else {
+        alert('Terfi işlemi başarısız: ' + response.message);
+      }
+    } catch (err) {
+      alert('Hata: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
+    } finally {
+      setIsPromoting(false);
     }
   };
 
@@ -183,25 +166,37 @@ export default function UserDetailPage() {
         title="Kullanıcı Düzenle"
         description={`${user.firstName} ${user.lastName} - ${user.email}`}
         actions={
-          <button
-            onClick={async () => {
-              if (!user) return;
-              if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
-              setIsProcessing(true);
-              try {
-                await usersApi.delete(user.id);
-                router.push('/users');
-              } catch (err) {
-                alert('Kullanıcı silinirken hata oluştu');
-              } finally {
-                setIsProcessing(false);
-              }
-            }}
-            className="text-light cursor-pointer rounded-md bg-red-500 px-4 py-2 font-medium transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isProcessing}
-          >
-            Sil
-          </button>
+          <div className="flex gap-2">
+            {!user.ldapUser && (
+              <button
+                type="button"
+                onClick={() => setIsPromoteModalOpen(true)}
+                className="border-brand text-brand hover:bg-brand cursor-pointer rounded-md border bg-transparent px-4 py-2 font-medium transition-colors hover:text-white"
+              >
+                Terfi Ettir (LDAP)
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                if (!user) return;
+                if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+                setIsProcessing(true);
+                try {
+                  await usersApi.delete(user.id);
+                  router.push('/users');
+                } catch (err) {
+                  alert('Kullanıcı silinirken hata oluştu');
+                } finally {
+                  setIsProcessing(false);
+                }
+              }}
+              className="text-light cursor-pointer rounded-md bg-red-500 px-4 py-2 font-medium transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isProcessing}
+            >
+              Sil
+            </button>
+          </div>
         }
       />
 
@@ -233,7 +228,7 @@ export default function UserDetailPage() {
                   <input
                     disabled
                     className="border-dark-200 bg-dark-50 text-dark-500 w-full cursor-not-allowed rounded-md border px-3 py-2"
-                    value={user.email}
+                    value={user.email || ''}
                     readOnly
                   />
                 </div>
@@ -242,7 +237,7 @@ export default function UserDetailPage() {
                   <input
                     disabled
                     className="border-dark-200 bg-dark-50 text-dark-500 w-full cursor-not-allowed rounded-md border px-3 py-2"
-                    value={user.username}
+                    value={user.username || ''}
                     readOnly
                   />
                 </div>
@@ -286,60 +281,16 @@ export default function UserDetailPage() {
                     onChange={(e) => setEditData((d) => ({ ...d, department: e.target.value }))}
                   />
                 </div>
+                <div>
+                  <label className="text-dark mb-1 block text-sm font-medium">Sky Number</label>
+                  <input
+                    className="border-dark-200 focus:ring-brand text-dark bg-light-50 w-full rounded-md border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none"
+                    value={editData.skyNumber || ''}
+                    onChange={(e) => setEditData((d) => ({ ...d, skyNumber: e.target.value }))}
+                    placeholder="S-123456"
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Roller */}
-            <div className="border-dark-200 border-t pt-5">
-              <h3 className="text-dark-800 mb-3 text-sm font-semibold">Roller</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {(availableRoles || []).map((role) => {
-                  const isSelected = selectedRoles.includes(role);
-                  return (
-                    <label
-                      key={role}
-                      style={{
-                        backgroundColor: isSelected ? '#e6f5f2' : undefined,
-                        borderColor: isSelected ? '#27a68e' : undefined,
-                      }}
-                      className={`flex cursor-pointer items-center gap-2 rounded-md border p-2 transition-all ${
-                        isSelected ? '' : 'bg-light border-dark-200'
-                      }`}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = '#e6f5f2';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = '';
-                        }
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        style={{ accentColor: '#27a68e' }}
-                        className="h-4 w-4 rounded"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          setSelectedRoles((prev) =>
-                            e.target.checked ? [...prev, role] : prev.filter((r) => r !== role),
-                          );
-                        }}
-                      />
-                      <span
-                        style={{ color: isSelected ? '#27a68e' : undefined }}
-                        className={`text-sm ${isSelected ? 'font-medium' : 'text-dark-700'}`}
-                      >
-                        {role}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-              <p className="text-dark-500 mt-3 text-xs">
-                Değişiklikleri kaydetmek için Kaydet butonuna basın.
-              </p>
             </div>
 
             {/* Action Buttons */}
@@ -362,6 +313,50 @@ export default function UserDetailPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isPromoteModalOpen}
+        onClose={() => setIsPromoteModalOpen(false)}
+        title="LDAP'a Terfi Ettir"
+      >
+        <div className="space-y-4">
+          <p className="text-dark-600 text-sm">
+            Kullanıcıyı kurumsal LDAP sistemine aktararak resmi üye statüsüne geçireceksiniz.
+          </p>
+          <div>
+            <label className="text-dark mb-1 block text-sm font-medium">Hedef Rol</label>
+            <select
+              className="border-dark-200 bg-light-50 text-dark focus:ring-brand w-full rounded-md border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none"
+              value={promoteData.targetRole}
+              onChange={(e) => setPromoteData((d) => ({ ...d, targetRole: e.target.value }))}
+            >
+              {availableRoles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-dark mb-1 block text-sm font-medium">Başlangıç Şifresi</label>
+            <input
+              type="password"
+              className="border-dark-200 bg-light-50 text-dark focus:ring-brand w-full rounded-md border px-3 py-2 focus:border-transparent focus:ring-2 focus:outline-none"
+              placeholder="En az 8 karakter"
+              value={promoteData.initialPassword}
+              onChange={(e) => setPromoteData((d) => ({ ...d, initialPassword: e.target.value }))}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setIsPromoteModalOpen(false)}>
+              İptal
+            </Button>
+            <Button onClick={handlePromote} disabled={isPromoting}>
+              {isPromoting ? 'İşleniyor...' : 'Terfi Ettir'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -19,21 +19,19 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
         onClick={onClose}
       />
-      <div className="relative bg-light rounded-lg shadow-xl max-w-md w-full mx-4 z-10 border border-dark-200">
-        <div className="flex items-center justify-between p-6 border-b border-dark-200">
-          <h2 className="text-xl font-bold text-brand">{title}</h2>
+      <div className="bg-light border-dark-200 relative z-10 mx-4 w-full max-w-md rounded-lg border shadow-xl">
+        <div className="border-dark-200 flex items-center justify-between border-b p-6">
+          <h2 className="text-brand text-xl font-bold">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="text-dark opacity-60 hover:opacity-100 text-2xl font-bold"
+            className="text-dark text-2xl font-bold opacity-60 hover:opacity-100"
           >
             ×
           </button>
         </div>
-        <div className="p-6 text-dark">
-          {children}
-        </div>
+        <div className="text-dark p-6">{children}</div>
       </div>
     </div>
   );
 }
-

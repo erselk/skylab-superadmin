@@ -24,6 +24,7 @@ export default function WaitingRoomPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <button
+          type="button"
           onClick={() => setActiveGame('snake')}
           className={`rounded-xl border-2 p-6 transition-all hover:scale-105 ${
             activeGame === 'snake'
@@ -37,6 +38,7 @@ export default function WaitingRoomPage() {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveGame('minesweeper')}
           className={`rounded-xl border-2 p-6 transition-all hover:scale-105 ${
             activeGame === 'minesweeper'
@@ -50,6 +52,7 @@ export default function WaitingRoomPage() {
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveGame('memory')}
           className={`rounded-xl border-2 p-6 transition-all hover:scale-105 ${
             activeGame === 'memory'

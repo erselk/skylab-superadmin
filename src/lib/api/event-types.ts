@@ -10,7 +10,7 @@ import type {
 
 export const eventTypesApi = {
   async getAll() {
-    return apiClient.get<DataResultListEventTypeDto>('/api/event-types/');
+    return apiClient.get<DataResultListEventTypeDto>('/api/event-types');
   },
 
   async getById(id: string) {
@@ -18,7 +18,7 @@ export const eventTypesApi = {
   },
 
   async create(data: CreateEventTypeRequest) {
-    return apiClient.post<DataResultEventTypeDto>('/api/event-types/', data);
+    return apiClient.post<DataResultEventTypeDto>('/api/event-types', data);
   },
 
   async update(id: string, data: UpdateEventTypeRequest) {
@@ -30,6 +30,8 @@ export const eventTypesApi = {
   },
 
   async getCoordinators(eventTypeName: string) {
-    return apiClient.get<DataResultSetUserDto>(`/api/event-types/${eventTypeName}/coordinators`);
+    return apiClient.get<DataResultSetUserDto>(
+      `/api/event-types/${encodeURIComponent(eventTypeName)}/coordinators`,
+    );
   },
 };

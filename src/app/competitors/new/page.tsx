@@ -14,7 +14,7 @@ import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
 import { eventsApi } from '@/lib/api/events';
 import { getLeaderEventType } from '@/lib/utils/permissions';
-import { UserDto } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
 
 const competitorSchema = z.object({
   userId: z.string().min(1, 'Kullanıcı seçiniz'),
@@ -31,19 +31,9 @@ export default function NewCompetitorPage() {
   const [isPending, startTransition] = useTransition();
   const [users, setUsers] = useState<{ value: string; label: string }[]>([]);
   const [events, setEvents] = useState<{ value: string; label: string; type?: string }[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    // Fetch user
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch((err) => console.error('User fetch error:', err));
-
     usersApi
       .getAll()
       .then((response) => {
@@ -61,7 +51,7 @@ export default function NewCompetitorPage() {
       });
 
     eventsApi
-      .getAll({ includeEventType: true })
+      .getAll()
       .then((response) => {
         if (response.success && response.data) {
           setEvents(

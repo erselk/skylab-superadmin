@@ -17,9 +17,11 @@ import { Modal } from '@/components/ui/Modal';
 import { z } from 'zod';
 import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
-import type { EventDto, UserDto } from '@/types/api';
+import { seasonsApi } from '@/lib/api/seasons';
+import type { EventDto } from '@/types/api';
 import { formatGMT0ToLocalInput, convertGMT3ToGMT0 } from '@/lib/utils/date';
 import { getLeaderEventType } from '@/lib/utils/permissions';
+import { useAuth } from '@/context/AuthContext';
 
 const eventSchema = z.object({
   name: z.string().min(2, 'En az 2 karakter olmalı'),
@@ -32,6 +34,9 @@ const eventSchema = z.object({
   linkedin: z.string().url().optional().or(z.literal('')),
   active: z.boolean().optional(),
   competitionId: z.string().optional(),
+  seasonId: z.string().optional(),
+  ranked: z.boolean().optional(),
+  prizeInfo: z.string().optional(),
   coverImage: z
     .custom<File | undefined>((val) => val === undefined || val instanceof File)
     .optional(),
@@ -46,32 +51,28 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
   const [error, setError] = useState<string | null>(null);
   const [eventTypes, setEventTypes] = useState<{ value: string; label: string }[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const [isRanked, setIsRanked] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
+  const { user: currentUser } = useAuth();
+  const [seasons, setSeasons] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
-    // Fetch user
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch((err) => console.error('User fetch error:', err));
-
     if (id) {
-      Promise.all([eventsApi.getById(id, { includeEventType: true }), eventTypesApi.getAll()])
-        .then(([eventResponse, eventTypesResponse]) => {
+      Promise.all([eventsApi.getById(id), eventTypesApi.getAll(), seasonsApi.getAll()])
+        .then(([eventResponse, eventTypesResponse, seasonsResponse]) => {
           if (eventResponse.success && eventResponse.data) {
             setEvent(eventResponse.data);
             setIsActive(eventResponse.data.active ?? true);
+            setIsRanked(eventResponse.data.ranked ?? false);
           } else {
             setError('Etkinlik bulunamadı');
           }
           if (eventTypesResponse.success && eventTypesResponse.data) {
             setEventTypes(eventTypesResponse.data.map((et) => ({ value: et.id, label: et.name })));
+          }
+          if (seasonsResponse.success && seasonsResponse.data) {
+            setSeasons(seasonsResponse.data.map((s) => ({ value: s.id, label: s.name })));
           }
           setLoading(false);
         })
@@ -114,10 +115,24 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
           endDate: data.endDate ? convertGMT3ToGMT0(data.endDate) : undefined,
           linkedin: data.linkedin || undefined,
           active: isActive,
+          ranked: isRanked,
+          prizeInfo: data.prizeInfo || undefined,
           competitionId: data.competitionId || undefined,
         };
 
         await eventsApi.update(id, eventData);
+
+        // Handle season change
+        const currentSeasonId = event?.season?.id;
+        const newSeasonId = data.seasonId;
+
+        if (newSeasonId !== currentSeasonId) {
+          if (newSeasonId) {
+            await eventsApi.assignSeason(id, newSeasonId);
+          } else if (currentSeasonId) {
+            await eventsApi.removeSeason(id);
+          }
+        }
 
         router.push('/events');
       } catch (error) {
@@ -178,8 +193,15 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         title="Etkinlik Düzenle"
         description={event.name}
         actions={
-          <div className="flex items-center gap-3">
-            <Toggle checked={isActive} onChange={setIsActive} />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-dark-600 text-xs font-medium">Aktif</span>
+              <Toggle checked={isActive} onChange={setIsActive} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-dark-600 text-xs font-medium">Sıralamalı</span>
+              <Toggle checked={isRanked} onChange={setIsRanked} />
+            </div>
             <Button
               type="button"
               variant="danger"
@@ -207,8 +229,9 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               startDate: event.startDate ? formatGMT0ToLocalInput(event.startDate) : '',
               endDate: event.endDate ? formatGMT0ToLocalInput(event.endDate) : '',
               linkedin: event.linkedin || '',
-              // competitionId not present in EventDto according to backend spec
-              competitionId: '',
+              seasonId: event.season?.id || '',
+              prizeInfo: event.prizeInfo || '',
+              competitionId: event.competitionId || '',
               coverImage: undefined,
             }}
           >
@@ -250,11 +273,22 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                           label="Konum"
                           placeholder="YTÜ Davutpaşa Kampüsü"
                         />
+                        <Select
+                          name="seasonId"
+                          label="Sezon"
+                          options={seasons}
+                          placeholder="Sezon Seçiniz (Opsiyonel)"
+                        />
                         <TextField
                           name="formUrl"
                           label="Form URL"
                           type="url"
                           placeholder="https://forms.google.com/..."
+                        />
+                        <TextField
+                          name="prizeInfo"
+                          label="Ödül Bilgisi"
+                          placeholder="1.ye laptop, 2.ye tablet..."
                         />
                       </div>
                       <div className="mt-4">

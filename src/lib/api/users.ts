@@ -3,14 +3,19 @@ import type {
   DataResultListUserDto,
   DataResultUserDto,
   UpdateUserRequest,
+  PromoteUserRequest,
   Result,
 } from '@/types/api';
-// Assuming normalizeRoleForBackend is still valid and needed
-import { normalizeRoleForBackend } from '@/config/roles';
 
 export const usersApi = {
-  async getAll() {
-    return apiClient.get<DataResultListUserDto>('/api/users/');
+  async getAll(params?: { email?: string; roles?: string[] }) {
+    const query = new URLSearchParams();
+    if (params?.email) query.set('email', params.email);
+    if (params?.roles) {
+      params.roles.forEach((role) => query.append('roles', role));
+    }
+    const qs = query.toString();
+    return apiClient.get<DataResultListUserDto>(qs ? `/api/users?${qs}` : '/api/users');
   },
 
   async getById(id: string) {
@@ -22,29 +27,19 @@ export const usersApi = {
   },
 
   async updateMe(data: UpdateUserRequest) {
-    return apiClient.put<DataResultUserDto>('/api/users/me', data);
+    return apiClient.patch<DataResultUserDto>('/api/users/me', data);
   },
 
   async update(id: string, data: UpdateUserRequest) {
-    return apiClient.put<DataResultUserDto>(`/api/users/${id}`, data);
+    return apiClient.patch<DataResultUserDto>(`/api/users/${id}`, data);
+  },
+
+  async promote(id: string, data: PromoteUserRequest) {
+    return apiClient.post<Result>(`/api/users/${id}/promote`, data);
   },
 
   async delete(id: string) {
     return apiClient.delete<Result>(`/api/users/${id}`);
-  },
-
-  async assignRole(username: string, role: string) {
-    const normalized = normalizeRoleForBackend(role);
-    return apiClient.put<Result>(
-      `/api/users/assign-role/${encodeURIComponent(username)}?role=${encodeURIComponent(normalized)}`,
-    );
-  },
-
-  async removeRole(username: string, role: string) {
-    const normalized = normalizeRoleForBackend(role);
-    return apiClient.put<Result>(
-      `/api/users/remove-role/${encodeURIComponent(username)}?role=${encodeURIComponent(normalized)}`,
-    );
   },
 
   async updateProfilePicture(image: File) {

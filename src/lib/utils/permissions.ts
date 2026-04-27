@@ -7,6 +7,23 @@ export const SUPER_ADMIN_ROLES = ['ADMIN', 'YK', 'DK'];
 export const EVENT_TYPE_ROLES = ['GECEKODU', 'AGC', 'BIZBIZE'];
 export const LEADER_ROLES = ['GECEKODU_LEADER', 'AGC_LEADER', 'BIZBIZE_LEADER'];
 
+const ROLE_ALIASES: Record<string, string> = {
+  GECEKODU_ADMIN: 'GECEKODU',
+  AGC_ADMIN: 'AGC',
+  BIZBIZE_ADMIN: 'BIZBIZE',
+};
+
+function normalizeRoleName(role: string): string {
+  const cleaned = role.trim().toUpperCase();
+  const withoutPrefix = cleaned.startsWith('ROLE_') ? cleaned.slice(5) : cleaned;
+  return ROLE_ALIASES[withoutPrefix] || withoutPrefix;
+}
+
+export function getNormalizedRoles(user: UserDto | null): string[] {
+  if (!user?.roles?.length) return [];
+  return Array.from(new Set(user.roles.map(normalizeRoleName)));
+}
+
 // Role -> Event Type Name mapping
 export const ROLE_TO_EVENT_TYPE: Record<string, string> = {
   GECEKODU: 'Gecekodu',
@@ -58,7 +75,7 @@ const PAGE_ACCESS: Record<string, string[] | null> = {
     'BIZBIZE_LEADER',
   ],
   '/announcements': ['ADMIN', 'YK', 'DK'],
-  '/images': ['ADMIN', 'YK', 'DK'],
+  '/migration-roles': ['ADMIN', 'YK', 'DK'],
   '/qr': null, // Herkes
   '/waiting-room': null, // Herkes
 };
@@ -67,16 +84,23 @@ const PAGE_ACCESS: Record<string, string[] | null> = {
  * Kullanıcının belirtilen rollerden birine sahip olup olmadığını kontrol eder
  */
 export function hasRole(user: UserDto | null, roles: string | string[]): boolean {
-  if (!user?.roles?.length) return false;
-  const rolesToCheck = Array.isArray(roles) ? roles : [roles];
-  return user.roles.some((userRole) => rolesToCheck.includes(userRole));
+  return !!user;
+}
+
+export function hasOnlyUserRole(user: UserDto | null): boolean {
+  return false;
 }
 
 /**
  * Kullanıcının süper admin olup olmadığını kontrol eder (ADMIN, YK, DK)
  */
 export function isSuperAdmin(user: UserDto | null): boolean {
-  return hasRole(user, SUPER_ADMIN_ROLES);
+  const roles = getNormalizedRoles(user);
+  return roles.some((role) => {
+    if (SUPER_ADMIN_ROLES.includes(role)) return true;
+    // Backend tarafinda isim degisse bile admin benzeri rolleri yakala.
+    return role.includes('ADMIN') || role.endsWith('_YK') || role.endsWith('_DK');
+  });
 }
 
 /**
@@ -85,13 +109,14 @@ export function isSuperAdmin(user: UserDto | null): boolean {
  * Etkinlik tipi rolü yoksa null döner
  */
 export function getLeaderEventType(user: UserDto | null): string | null {
-  if (!user?.roles?.length) return null;
+  const normalizedRoles = getNormalizedRoles(user);
+  if (!normalizedRoles.length) return null;
 
   // Süper adminler tüm etkinlik tiplerini yönetebilir
   if (isSuperAdmin(user)) return null;
 
   // Kullanıcının etkinlik tipi rolünü bul
-  for (const role of user.roles) {
+  for (const role of normalizedRoles) {
     if (ROLE_TO_EVENT_TYPE[role]) {
       return ROLE_TO_EVENT_TYPE[role];
     }
@@ -105,26 +130,7 @@ export function getLeaderEventType(user: UserDto | null): string | null {
  * Optimize: Sadece basit role array kontrolü yapar
  */
 export function canAccessPage(user: UserDto | null, path: string): boolean {
-  if (!user?.roles?.length) return false;
-
-  // Sadece USER rolü varsa sadece waiting-room'a erişebilir
-  if (user.roles.length === 1 && user.roles[0] === 'USER') {
-    return path === '/waiting-room';
-  }
-
-  // Path'in base kısmını al (/events/123/edit -> /events)
-  const basePath = '/' + (path.split('/')[1] || '');
-
-  const allowedRoles = PAGE_ACCESS[basePath];
-
-  // null = herkes erişebilir
-  if (allowedRoles === null) return true;
-
-  // undefined = tanımlanmamış sayfa, varsayılan olarak erişime izin ver
-  if (allowedRoles === undefined) return true;
-
-  // Rol kontrolü
-  return user.roles.some((role) => allowedRoles.includes(role));
+  return !!user;
 }
 
 /**
@@ -142,7 +148,7 @@ export function canManageModule(
     | 'announcements'
     | 'images',
 ): boolean {
-  return canAccessPage(user, `/${module}`);
+  return !!user;
 }
 
 /**
@@ -153,20 +159,5 @@ export function canManageEventType(
   user: UserDto | null,
   eventTypeName: string | undefined,
 ): boolean {
-  if (!user?.roles?.length) return false;
-
-  // Süper adminler her şeyi yönetebilir
-  if (isSuperAdmin(user)) return true;
-
-  // Etkinlik tipi belirtilmemişse erişime izin ver (liste sayfaları için)
-  if (!eventTypeName) return true;
-
-  // Kullanıcının rolüne göre etkinlik tipi kontrolü
-  const userEventType = getLeaderEventType(user);
-
-  // Etkinlik tipi rolü yoksa erişim yok
-  if (!userEventType) return false;
-
-  // Kendi tipini mi yönetmeye çalışıyor?
-  return userEventType.toLowerCase() === eventTypeName.toLowerCase();
+  return !!user;
 }

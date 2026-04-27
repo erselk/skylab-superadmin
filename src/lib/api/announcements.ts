@@ -18,7 +18,9 @@ export const announcementsApi = {
       if (value !== undefined) query.set(key, value.toString());
     });
     const qs = query.toString();
-    return apiClient.get<DataResultListAnnouncementDto>(`/api/announcements/${qs ? `?${qs}` : ''}`);
+    return apiClient.get<DataResultListAnnouncementDto>(
+      qs ? `/api/announcements?${qs}` : '/api/announcements',
+    );
   },
 
   async getByEventType(
@@ -47,10 +49,10 @@ export const announcementsApi = {
 
   async create(data: CreateAnnouncementRequestDto, coverImage?: File) {
     const formData = new FormData();
-    const jsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    formData.append('data', jsonBlob);
+    // Backend bu alanı form-data text (JSON string) olarak bekliyor.
+    formData.append('data', JSON.stringify(data));
     if (coverImage) formData.append('coverImage', coverImage);
-    return apiClient.postFormData<DataResultAnnouncementDto>('/api/announcements/', formData);
+    return apiClient.postFormData<DataResultAnnouncementDto>('/api/announcements', formData);
   },
 
   async update(id: string, data: UpdateAnnouncementRequest) {

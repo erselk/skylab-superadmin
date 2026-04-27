@@ -16,21 +16,30 @@ import { Modal } from '@/components/ui/Modal';
 import { z } from 'zod';
 import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
+import { seasonsApi } from '@/lib/api/seasons';
 import { convertGMT3ToGMT0, getCurrentDateTimeGMT3 } from '@/lib/utils/date';
 import { getLeaderEventType } from '@/lib/utils/permissions';
-import { UserDto } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
+import type { UserDto } from '@/types/api';
 
 const eventSchema = z.object({
   name: z.string().min(2, 'En az 2 karakter olmalı'),
   description: z.string().optional(),
   location: z.string().optional(),
   eventTypeId: z.string().min(1, 'Etkinlik tipi seçiniz'),
+  seasonId: z.string().optional(),
+  capacity: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : Number(val)),
+    z.number().int().positive().optional(),
+  ),
   formUrl: z.string().url().optional().or(z.literal('')),
   startDate: z.string(),
   endDate: z.string().min(1, 'Bitiş tarihi zorunludur'),
   linkedin: z.string().url().optional().or(z.literal('')),
-  active: z.boolean().optional(),
+  active: z.boolean().default(true),
   competitionId: z.string().optional(),
+  isRanked: z.boolean().optional(),
+  prizeInfo: z.string().optional(),
   coverImage: z.custom<File>((val) => val instanceof File, 'Kapak resmi zorunludur'),
 });
 
@@ -42,13 +51,15 @@ export default function NewEventPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [eventTypes, setEventTypes] = useState<{ value: string; label: string }[]>([]);
+  const [seasons, setSeasons] = useState<{ value: string; label: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingEventType, setIsCreatingEventType] = useState(false);
   const eventFormMethodsRef = useRef<any>(null);
-  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
+  const { user: currentUser } = useAuth();
   const [leaderEventTypeId, setLeaderEventTypeId] = useState<string | null>(null);
+  const closeEventTypeModal = () => setIsModalOpen(false);
 
-  const loadEventTypes = () => {
+  const loadInitialOptions = () => {
     eventTypesApi
       .getAll()
       .then((response) => {
@@ -63,6 +74,17 @@ export default function NewEventPage() {
       })
       .catch((error) => {
         console.error('Event types fetch error:', error);
+      });
+
+    seasonsApi
+      .getAll()
+      .then((response) => {
+        if (response.success && response.data) {
+          setSeasons(response.data.map((s) => ({ value: s.id, label: s.name })));
+        }
+      })
+      .catch((error) => {
+        console.error('Seasons fetch error:', error);
       });
   };
 
@@ -80,16 +102,7 @@ export default function NewEventPage() {
   };
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch((err) => console.error('User fetch error:', err));
-
-    loadEventTypes();
+    loadInitialOptions();
   }, []);
 
   useEffect(() => {
@@ -107,11 +120,15 @@ export default function NewEventPage() {
           description: data.description || undefined,
           location: data.location ?? '',
           eventTypeId: data.eventTypeId,
-          formUrl: coverImage ? data.formUrl || undefined : undefined,
+          seasonId: data.seasonId || undefined,
+          capacity: data.capacity,
+          formUrl: data.formUrl || undefined,
           startDate: convertGMT3ToGMT0(data.startDate),
           endDate: convertGMT3ToGMT0(data.endDate),
           linkedin: data.linkedin || undefined,
-          active: true,
+          active: data.active,
+          isRanked: data.isRanked ?? false,
+          prizeInfo: data.prizeInfo || undefined,
           competitionId: data.competitionId || undefined,
         };
         await eventsApi.create(eventData, coverImage);
@@ -135,7 +152,7 @@ export default function NewEventPage() {
         authorizedRoles: [data.name, `${data.name}_LEADER`],
       });
       if (response.success && response.data) {
-        loadEventTypes();
+        loadInitialOptions();
         eventFormMethodsRef.current?.setValue?.('eventTypeId', response.data.id);
         setIsModalOpen(false);
       }
@@ -162,8 +179,11 @@ export default function NewEventPage() {
             defaultValues={{
               coverImage: undefined,
               eventTypeId: leaderEventTypeId || '',
+              seasonId: '',
+              capacity: undefined,
               startDate: getCurrentDateTimeGMT3(),
               endDate: getCurrentDateTimeGMT3(),
+              isRanked: false,
             }}
           >
             {(methods) => {
@@ -216,12 +236,33 @@ export default function NewEventPage() {
                           label="Konum"
                           placeholder="YTÜ Davutpaşa Kampüsü"
                         />
+                        <Select
+                          name="seasonId"
+                          label="Sezon"
+                          options={seasons}
+                          placeholder="Sezon Seçiniz (Opsiyonel)"
+                        />
+                        <TextField
+                          name="capacity"
+                          label="Kapasite"
+                          type="number"
+                          placeholder="500"
+                        />
                         <TextField
                           name="formUrl"
                           label="Form URL"
                           type="url"
                           placeholder="https://forms.google.com/..."
                         />
+                        <TextField
+                          name="prizeInfo"
+                          label="Ödül Bilgisi"
+                          placeholder="1.ye laptop, 2.ye tablet..."
+                        />
+                        <div className="flex items-center gap-4 pt-8">
+                          <Checkbox name="isRanked" label="Sıralamalı Etkinlik" />
+                          <Checkbox name="active" label="Aktif mi?" />
+                        </div>
                       </div>
                       <div className="mt-4">
                         <Textarea
@@ -277,7 +318,7 @@ export default function NewEventPage() {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Etkinlik Tipi">
+      <Modal isOpen={isModalOpen} onClose={closeEventTypeModal} title="Yeni Etkinlik Tipi">
         <Form schema={eventTypeSchema} onSubmit={(data) => handleCreateEventType(data)}>
           {(methods) => (
             <>
@@ -288,7 +329,11 @@ export default function NewEventPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeEventTypeModal();
+                  }}
                   className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
                 >
                   İptal

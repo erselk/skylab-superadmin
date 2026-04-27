@@ -7,19 +7,14 @@ import type {
   CreateSeasonRequest,
 } from '@/types/api';
 
-export async function getSeasons(params?: { includeEvents?: boolean }) {
+export async function getSeasons() {
   try {
-    const query = new URLSearchParams();
-    if (params?.includeEvents !== undefined) query.set('includeEvents', params.includeEvents.toString());
-    const qs = query.toString();
-    
-    const endpoint = qs ? `/api/seasons/?${qs}` : `/api/seasons/`;
-    const response = await serverFetch<DataResultListSeasonDto>(endpoint);
-    
+    const response = await serverFetch<DataResultListSeasonDto>('/api/seasons');
+
     if (!response || !response.data) {
       throw new Error('Geçersiz API yanıtı');
     }
-    
+
     return response.data || [];
   } catch (error) {
     console.error('getSeasons error:', error);
@@ -28,20 +23,14 @@ export async function getSeasons(params?: { includeEvents?: boolean }) {
   }
 }
 
-export async function getSeasonById(id: string, params?: { includeEvents?: boolean }) {
+export async function getSeasonById(id: string) {
   try {
-    const query = new URLSearchParams();
-    if (params?.includeEvents !== undefined) query.set('includeEvents', params.includeEvents.toString());
-    const qs = query.toString();
-    
-    const response = await serverFetch<DataResultSeasonDto>(
-      `/api/seasons/${id}${qs ? `?${qs}` : ''}`
-    );
-    
+    const response = await serverFetch<DataResultSeasonDto>(`/api/seasons/${id}`);
+
     if (!response || !response.data) {
       throw new Error('Geçersiz API yanıtı');
     }
-    
+
     return response.data;
   } catch (error) {
     console.error('getSeasonById error:', error);
@@ -59,7 +48,7 @@ export async function createSeason(formData: FormData) {
   };
 
   try {
-    await serverFetch<DataResultSeasonDto>('/api/seasons/', {
+    await serverFetch<DataResultSeasonDto>('/api/seasons', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -82,7 +71,7 @@ export async function deleteSeason(id: string) {
 
 export async function addEventToSeason(seasonId: string, eventId: string) {
   try {
-    await serverFetch(`/api/seasons/addEventToSeason?seasonId=${seasonId}&eventId=${eventId}`, {
+    await serverFetch(`/api/events/${eventId}/seasons/${seasonId}`, {
       method: 'POST',
     });
   } catch (error) {
@@ -93,8 +82,8 @@ export async function addEventToSeason(seasonId: string, eventId: string) {
 
 export async function removeEventFromSeason(seasonId: string, eventId: string) {
   try {
-    await serverFetch(`/api/seasons/removeEventFromSeason?seasonId=${seasonId}&eventId=${eventId}`, {
-      method: 'POST',
+    await serverFetch(`/api/events/${eventId}/season`, {
+      method: 'DELETE',
     });
   } catch (error) {
     console.error('removeEventFromSeason error:', error);

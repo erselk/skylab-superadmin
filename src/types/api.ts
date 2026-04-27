@@ -45,18 +45,28 @@ export interface UserDto {
   email: string;
   firstName: string;
   lastName: string;
+  name?: string; // Some endpoints might use name/surname
+  surname?: string;
+  skyNumber?: string;
+  phoneNumber?: string;
   profilePictureUrl?: string;
   linkedin?: string;
   university?: string;
   faculty?: string;
   department?: string;
   roles: string[];
+  ldapUser?: boolean;
 }
 
 export interface UpdateUserRequest {
   firstName?: string;
   lastName?: string;
+  name?: string;
+  surname?: string;
+  phoneNumber?: string;
   linkedin?: string;
+  studentNumber?: string;
+  skyNumber?: string;
   university?: string;
   faculty?: string;
   department?: string;
@@ -139,6 +149,7 @@ export interface CreateEventRequest {
   location?: string;
   eventTypeId?: string;
   seasonId?: string;
+  capacity?: number;
   formUrl?: string;
   startDate?: string;
   endDate?: string;
@@ -146,6 +157,7 @@ export interface CreateEventRequest {
   active?: boolean;
   competitionId?: string;
   prizeInfo?: string;
+  isRanked?: boolean;
   ranked?: boolean;
 }
 
@@ -262,6 +274,21 @@ export interface UpdateAnnouncementRequest {
   formUrl?: string;
 }
 
+// Media
+export interface MediaDto {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  size?: number;
+}
+
+// Promote User
+export interface PromoteUserRequest {
+  targetRole: string;
+  initialPassword: string;
+}
+
 // Leaderboard
 export interface LeaderboardDto {
   user?: UserDto;
@@ -276,6 +303,7 @@ export interface RegisterRequestDto {
   email?: string;
   firstName?: string;
   lastName?: string;
+  password?: string;
 }
 
 export interface RegisterResponseDto {
@@ -321,3 +349,5 @@ export type DataResultListAnnouncementDto = DataResultList<AnnouncementDto>;
 export type SuccessDataResultUploadImageResponseDto = DataResult<UploadImageResponseDto>;
 
 export type DataResultListLeaderboardDto = DataResultList<LeaderboardDto>;
+
+export type DataResultMediaDto = DataResult<MediaDto>;

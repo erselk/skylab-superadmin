@@ -8,21 +8,14 @@ import type {
   UpdateCompetitorRequest,
 } from '@/types/api';
 
-export async function getCompetitors(params?: { includeUser?: boolean; includeEvent?: boolean }) {
+export async function getCompetitors() {
   try {
-    const query = new URLSearchParams();
-    if (params?.includeUser !== undefined) query.set('includeUser', params.includeUser.toString());
-    if (params?.includeEvent !== undefined) query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    
-    const response = await serverFetch<DataResultListCompetitorDto>(
-      `/api/competitors/my${qs ? `?${qs}` : ''}`
-    );
-    
+    const response = await serverFetch<DataResultListCompetitorDto>('/api/competitors/my');
+
     if (!response || !response.data) {
       throw new Error('Geçersiz API yanıtı');
     }
-    
+
     return response.data || [];
   } catch (error) {
     console.error('getCompetitors error:', error);
@@ -40,7 +33,7 @@ export async function createCompetitor(formData: FormData) {
   };
 
   try {
-    await serverFetch<DataResultCompetitorDto>('/api/competitors/', {
+    await serverFetch<DataResultCompetitorDto>('/api/competitors', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -52,8 +45,8 @@ export async function createCompetitor(formData: FormData) {
 
 export async function updateCompetitor(id: string, formData: FormData) {
   const data: UpdateCompetitorRequest = {
-    userId: formData.get('userId') as string || undefined,
-    eventId: formData.get('eventId') as string || undefined,
+    userId: (formData.get('userId') as string) || undefined,
+    eventId: (formData.get('eventId') as string) || undefined,
     points: parseFloat(formData.get('points') as string) || undefined,
     winner: formData.get('winner') === 'true' || undefined,
   };

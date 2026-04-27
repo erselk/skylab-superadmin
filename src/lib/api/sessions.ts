@@ -6,30 +6,50 @@ import type {
   DataResultVoid,
 } from '@/types/api';
 
+const ALLOWED_SESSION_TYPES = [
+  'WORKSHOP',
+  'PRESENTATION',
+  'PANEL',
+  'KEYNOTE',
+  'NETWORKING',
+  'OTHER',
+  'CTF',
+  'HACKATHON',
+  'JAM',
+] as const;
+
+function normalizeSessionType(type?: string): string | undefined {
+  if (!type) return undefined;
+  const normalized = type.trim().toUpperCase();
+  return (ALLOWED_SESSION_TYPES as readonly string[]).includes(normalized) ? normalized : undefined;
+}
+
 export const sessionsApi = {
-  async getAll(params?: { includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultListSessionDto>(`/api/sessions/${qs ? `?${qs}` : ''}`);
+  async getAll() {
+    return apiClient.get<DataResultListSessionDto>('/api/sessions');
   },
 
-  async create(data: CreateSessionRequest) {
-    return apiClient.post<DataResultSessionDto>('/api/sessions/', data);
+  async create(data: CreateSessionRequest, speakerImage?: File) {
+    const payload: CreateSessionRequest = {
+      ...data,
+      sessionType: normalizeSessionType(data.sessionType),
+    };
+
+    const formData = new FormData();
+    const jsonBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    formData.append('data', jsonBlob);
+    if (speakerImage) formData.append('speakerImage', speakerImage);
+
+    return apiClient.postFormData<DataResultSessionDto>('/api/sessions', formData);
   },
 
-  async getById(id: string, params?: { includeEvent?: boolean }) {
-    const query = new URLSearchParams();
-    if (params?.includeEvent !== undefined)
-      query.set('includeEvent', params.includeEvent.toString());
-    const qs = query.toString();
-    return apiClient.get<DataResultSessionDto>(`/api/sessions/${id}${qs ? `?${qs}` : ''}`);
+  async getById(_id: string) {
+    throw new Error('Postman sozlesmesine gore GET /api/sessions/:id endpointi tanimli degil');
   },
 
   async update(
-    id: string,
-    data: {
+    _id: string,
+    _data: {
       eventId?: string;
       title?: string;
       speakerName?: string;
@@ -41,9 +61,7 @@ export const sessionsApi = {
       sessionType?: string;
     },
   ) {
-    // Should use UpdateSessionRequest but for simplicity/avoiding import hell I define inline or just use any if needed, but here I can just use the shape.
-    // Wait, I can import UpdateSessionRequest now.
-    return apiClient.put<DataResultSessionDto>(`/api/sessions/${id}`, data);
+    throw new Error('Postman sozlesmesine gore PUT /api/sessions/:id endpointi tanimli degil');
   },
 
   async delete(id: string) {

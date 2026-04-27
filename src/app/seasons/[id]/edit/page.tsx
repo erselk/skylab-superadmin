@@ -50,7 +50,7 @@ export default function EditSeasonPage() {
   useEffect(() => {
     if (id) {
       seasonsApi
-        .getById(id, { includeEvents: true }) // Include events initially too
+        .getById(id)
         .then((response) => {
           if (response.success && response.data) {
             setSeason(response.data);
@@ -106,7 +106,7 @@ export default function EditSeasonPage() {
     try {
       await seasonsApi.addEvent(id, selectedEventId);
       // Reload season
-      const response = await seasonsApi.getById(id, { includeEvents: true });
+      const response = await seasonsApi.getById(id);
       if (response.success && response.data) {
         setSeason(response.data);
       }
@@ -122,7 +122,7 @@ export default function EditSeasonPage() {
     try {
       await seasonsApi.removeEvent(id, eventId);
       // Reload season
-      const response = await seasonsApi.getById(id, { includeEvents: true });
+      const response = await seasonsApi.getById(id);
       if (response.success && response.data) {
         setSeason(response.data);
       }
@@ -256,6 +256,7 @@ export default function EditSeasonPage() {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleRemoveEvent(event.id)}
                     className="text-sm font-medium text-red-500 hover:text-red-700"
                   >

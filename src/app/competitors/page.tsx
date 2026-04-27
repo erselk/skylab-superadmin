@@ -10,6 +10,7 @@ import type { CompetitorDto } from '@/types/api';
 import { competitorsApi } from '@/lib/api/competitors';
 import { getLeaderEventType } from '@/lib/utils/permissions';
 import { CompetitorsGridClient } from './CompetitorsGridClient';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CompetitorsPage() {
   const router = useRouter();
@@ -17,32 +18,13 @@ export default function CompetitorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  useEffect(() => {
-    // Fetch user first
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-        } else {
-          // Kullanıcı yüklenemedi, yine de veri çekmeyi dene
-          setCurrentUser({});
-        }
-      })
-      .catch((err) => {
-        console.error('User fetch error:', err);
-        // Hata olsa bile veri çekmeyi dene
-        setCurrentUser({});
-      });
-  }, []);
+  const { user: currentUser } = useAuth();
 
   const loadCompetitors = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await competitorsApi.getAll({ includeUser: true, includeEvent: true });
+      const response = await competitorsApi.getAll();
       if (response.success && response.data) {
         let data = response.data;
 
@@ -76,9 +58,7 @@ export default function CompetitorsPage() {
   };
 
   useEffect(() => {
-    if (currentUser !== null) {
-      loadCompetitors();
-    }
+    loadCompetitors();
   }, [currentUser]);
 
   // Group competitors by Event Name

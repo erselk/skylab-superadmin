@@ -64,6 +64,7 @@ export function UsersTableClient({ data }: { data: UserRow[] }) {
                 Düzenle
               </Link>
               <button
+                type="button"
                 onClick={() => handleDelete(row)}
                 className="text-dark-600 hover:text-dark-700 cursor-pointer underline"
               >

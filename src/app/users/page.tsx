@@ -1,14 +1,11 @@
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getUsers } from './actions';
 import { UsersGridClient } from './UsersGridClient';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
 import type { UserDto } from '@/types/api';
 import { serverFetch } from '@/lib/api/server-client';
 import type { DataResult, UserDto as UserDtoType } from '@/types/api';
 
-export const dynamic = 'force-dynamic';
-
+export const revalidate = 60;
 export default async function UsersPage() {
   let users: UserDto[] = [];
   let error: string | null = null;
@@ -29,56 +26,11 @@ export default async function UsersPage() {
     console.error('Users page error:', err);
   }
 
-  // Kullanıcıları gruplara göre dağıt
-  const usersByGroup: Record<string, UserDto[]> = {
-    ADMIN: [],
-    YONETIM: [], // YK + DK
-    AGC: [], // AGC_ADMIN + AGC_LEADER
-    GECEKODU: [], // GECEKODU_ADMIN + GECEKODU_LEADER
-    BIZBIZE: [], // BIZBIZE_ADMIN + BIZBIZE_LEADER
-    USER: [],
-  };
-
-  users.forEach((user) => {
-    const roles = user.roles || [];
-
-    if (roles.includes('ADMIN')) {
-      usersByGroup.ADMIN.push(user);
-    } else if (roles.includes('YK') || roles.includes('DK')) {
-      usersByGroup.YONETIM.push(user);
-    } else if (roles.includes('AGC_ADMIN') || roles.includes('AGC_LEADER')) {
-      usersByGroup.AGC.push(user);
-    } else if (roles.includes('GECEKODU_ADMIN') || roles.includes('GECEKODU_LEADER')) {
-      usersByGroup.GECEKODU.push(user);
-    } else if (roles.includes('BIZBIZE_ADMIN') || roles.includes('BIZBIZE_LEADER')) {
-      usersByGroup.BIZBIZE.push(user);
-    } else {
-      usersByGroup.USER.push(user);
-    }
-  });
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Kullanıcılar"
         description="Sistemdeki tüm kullanıcıları görüntüleyin ve yönetin"
-        actions={
-          <Link href="/users/new">
-            <Button>
-              <span className="flex items-center gap-2">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Yeni Kullanıcı
-              </span>
-            </Button>
-          </Link>
-        }
       />
 
       {/* Error State */}
@@ -114,7 +66,7 @@ export default async function UsersPage() {
                     <div className="bg-light border-dark-200 mt-3 rounded-lg border p-4">
                       <p className="text-dark-800 mb-2 font-semibold">Mevcut Rolleriniz:</p>
                       <div className="mb-2 flex flex-wrap gap-2">
-                        {currentUser.roles.length > 0 ? (
+                        {currentUser.roles && currentUser.roles.length > 0 ? (
                           currentUser.roles.map((role, idx) => (
                             <span
                               key={idx}
@@ -164,27 +116,11 @@ export default async function UsersPage() {
               </svg>
             </div>
             <h3 className="text-dark-800 mb-2 text-xl font-semibold">Henüz kullanıcı yok</h3>
-            <p className="text-dark-600 mb-6">Sisteme ilk kullanıcıyı ekleyerek başlayın</p>
-            <Link href="/users/new">
-              <Button>
-                <span className="flex items-center gap-2">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  İlk Kullanıcıyı Ekle
-                </span>
-              </Button>
-            </Link>
+            <p className="text-dark-600 mb-6">Henüz kullanıcı verisi bulunmuyor.</p>
           </div>
         </div>
       ) : (
-        /* Users Grid by Role */
-        <UsersGridClient usersByGroup={usersByGroup} />
+        <UsersGridClient users={users} />
       )}
     </div>
   );

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
+  const token =
+    request.cookies.get('auth_token')?.value ||
+    request.cookies.get('access_token')?.value ||
+    request.cookies.get('token')?.value;
 
   const publicRoutes = ['/login', '/api/auth'];
   const pathname = request.nextUrl.pathname;

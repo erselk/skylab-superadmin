@@ -31,12 +31,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           close: () => setIsMobileSidebarOpen(false),
         }}
       >
-        <div className="bg-light flex h-screen">
+        <div className="bg-light flex min-h-dvh min-h-screen">
           <Sidebar
             isMobileOpen={isMobileSidebarOpen}
             onMobileClose={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="bg-light flex flex-1 flex-col overflow-hidden">
+          <div className="bg-light flex min-w-0 flex-1 flex-col">
             <main className="bg-light text-dark flex-1 overflow-y-auto">
               <div className="mx-auto w-full max-w-6xl p-6">
                 <GlobalErrorMessenger />

@@ -19,18 +19,24 @@ export async function getAnnouncements(params?: {
       if (value !== undefined) query.set(key, value.toString());
     });
     const qs = query.toString();
-    
-    const endpoint = qs ? `/api/announcements/?${qs}` : `/api/announcements/`;
+
+    const endpoint = qs ? `/api/announcements?${qs}` : `/api/announcements`;
     const response = await serverFetch<DataResultListAnnouncementDto>(endpoint);
-    
+
     if (!response || !response.data) {
-      throw new Error('Geçersiz API yanıtı');
+      return [];
     }
-    
+
     return response.data || [];
   } catch (error) {
-    console.error('getAnnouncements error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+
+    // Eğer backend hiç duyuru olmadığında "not.found" veya 404 hatası dönüyorsa boş liste dön
+    if (errorMessage.includes('not.found') || errorMessage.includes('404')) {
+      return [];
+    }
+
+    console.error('getAnnouncements error:', error);
     throw new Error(`Duyurular yüklenirken hata oluştu: ${errorMessage}`);
   }
 }
@@ -38,11 +44,11 @@ export async function getAnnouncements(params?: {
 export async function getAnnouncementById(id: string) {
   try {
     const response = await serverFetch<DataResultAnnouncementDto>(`/api/announcements/${id}`);
-    
+
     if (!response || !response.data) {
       throw new Error('Geçersiz API yanıtı');
     }
-    
+
     return response.data;
   } catch (error) {
     console.error('getAnnouncementById error:', error);
@@ -58,13 +64,13 @@ export async function createAnnouncement(formData: FormData) {
     body: formData.get('body') as string,
     active: formData.get('active') === 'true' || undefined,
     eventTypeId: formData.get('eventTypeId') as string,
-    formUrl: formData.get('formUrl') as string || undefined,
+    formUrl: (formData.get('formUrl') as string) || undefined,
   };
 
   // TODO: Handle file upload with serverFetch
   try {
     // For now, skipping file upload - need to handle FormData properly
-    await serverFetch<DataResultAnnouncementDto>('/api/announcements/', {
+    await serverFetch<DataResultAnnouncementDto>('/api/announcements', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -76,11 +82,11 @@ export async function createAnnouncement(formData: FormData) {
 
 export async function updateAnnouncement(id: string, formData: FormData) {
   const data: UpdateAnnouncementRequest = {
-    title: formData.get('title') as string || undefined,
-    body: formData.get('body') as string || undefined,
+    title: (formData.get('title') as string) || undefined,
+    body: (formData.get('body') as string) || undefined,
     active: formData.get('active') === 'true' || undefined,
-    eventTypeId: formData.get('eventTypeId') as string || undefined,
-    formUrl: formData.get('formUrl') as string || undefined,
+    eventTypeId: (formData.get('eventTypeId') as string) || undefined,
+    formUrl: (formData.get('formUrl') as string) || undefined,
   };
 
   try {

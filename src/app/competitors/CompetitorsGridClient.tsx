@@ -121,6 +121,7 @@ export function CompetitorsGridClient({ competitorsByEvent }: CompetitorsGridCli
           </svg>
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
               className="text-dark-400 hover:text-dark-600 absolute top-2.5 right-3"
             >

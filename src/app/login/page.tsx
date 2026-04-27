@@ -46,6 +46,7 @@ function LoginContent() {
             </div>
           )}
           <button
+            type="button"
             onClick={() => {
               setHasRedirected(false);
               window.location.href = getOAuth2AuthUrl();
@@ -56,6 +57,7 @@ function LoginContent() {
           </button>
           <div className="mt-4">
             <button
+              type="button"
               onClick={() => {
                 router.push('/login');
               }}
@@ -87,6 +89,7 @@ function LoginContent() {
       try {
         // LocalStorage'ı temizle
         localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_user');
 
         // Cookie'leri kesinlikle temizlemek için logout endpoint'ini tekrar çağır
         const logoutResponse = await fetch('/api/auth/logout', {
@@ -126,6 +129,7 @@ function LoginContent() {
             tıklayın.
           </p>
           <button
+            type="button"
             onClick={handleLogin}
             className="bg-brand text-light hover:bg-brand-600 rounded px-4 py-2 font-medium"
           >
