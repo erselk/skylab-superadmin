@@ -102,7 +102,10 @@ export interface CompetitorDto {
   id: string;
   user?: UserDto;
   event?: EventDto;
+  /** API bazı uçlarda skor olarak döner */
   score?: number;
+  /** Bazı uçlarda puan olarak döner */
+  points?: number;
   rank?: number;
   winner?: boolean;
 }
@@ -141,6 +144,26 @@ export interface EventDto {
   competitors?: CompetitorDto[];
   ranked?: boolean;
   competition?: CompetitionDto;
+}
+
+export interface GetEventDayResponseDto {
+  id: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  event?: EventDto;
+}
+
+export interface CreateEventDayRequest {
+  eventId?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface UpdateEventDayRequest {
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CreateEventRequest {
@@ -218,15 +241,17 @@ export interface SessionDto {
   startTime?: string;
   endTime?: string;
   orderIndex?: number;
+  eventDayId?: string;
   event?: EventDto;
   sessionType?: string;
   // Enum values are: WORKSHOP, PRESENTATION, PANEL, KEYNOTE, NETWORKING, OTHER, CTF, HACKATHON, JAM
 }
 
 export interface CreateSessionRequest {
-  eventId?: string;
+  eventDayId?: string;
   title?: string;
   speakerName?: string;
+  speakerImageId?: string;
   speakerLinkedin?: string;
   description?: string;
   startTime?: string;
@@ -236,7 +261,6 @@ export interface CreateSessionRequest {
 }
 
 export interface UpdateSessionRequest {
-  eventId?: string;
   title?: string;
   speakerName?: string;
   speakerLinkedin?: string;
@@ -323,6 +347,31 @@ export interface CreateGroupRequest {
   groupName: string;
 }
 
+// Tickets
+export interface TicketCheckInDto {
+  id: string;
+  eventDayId?: string;
+  createdAt?: string;
+  scannedBy?: UserDto;
+}
+
+export interface GetTicketResponseDto {
+  id: string;
+  sent?: boolean;
+  ticketType?: 'REGISTERED' | 'GUEST';
+  owner?: UserDto;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestEmail?: string;
+  guestPhoneNumber?: string;
+  guestUniversity?: string;
+  guestFaculty?: string;
+  guestDepartment?: string;
+  guestGrade?: string;
+  event?: EventDto;
+  checkIns?: TicketCheckInDto[];
+}
+
 // Response Type Aliases
 export type DataResultUserDto = DataResult<UserDto>;
 export type DataResultListUserDto = DataResultList<UserDto>;
@@ -351,3 +400,9 @@ export type SuccessDataResultUploadImageResponseDto = DataResult<UploadImageResp
 export type DataResultListLeaderboardDto = DataResultList<LeaderboardDto>;
 
 export type DataResultMediaDto = DataResult<MediaDto>;
+
+export type DataResultListGetTicketResponseDto = DataResultList<GetTicketResponseDto>;
+export type DataResultGetTicketResponseDto = DataResult<GetTicketResponseDto>;
+
+export type DataResultGetEventDayResponseDto = DataResult<GetEventDayResponseDto>;
+export type DataResultListGetEventDayResponseDto = DataResultList<GetEventDayResponseDto>;

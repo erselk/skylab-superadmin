@@ -149,7 +149,6 @@ export default function NewEventPage() {
     try {
       const response = await eventTypesApi.create({
         name: data.name,
-        authorizedRoles: [data.name, `${data.name}_LEADER`],
       });
       if (response.success && response.data) {
         loadInitialOptions();

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import type { SessionDto } from '@/types/api';
@@ -35,15 +34,7 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Oturumlar"
-        description="Oturumlari goruntuleyin ve yonetin"
-        actions={
-          <Link href="/sessions/new">
-            <Button>Yeni Oturum</Button>
-          </Link>
-        }
-      />
+      <PageHeader title="Oturumlar" actions={<Button href="/sessions/new">Yeni Oturum</Button>} />
 
       {loading ? (
         <div className="bg-light border-dark-200 rounded-lg border p-6 text-center text-sm">
@@ -66,18 +57,29 @@ export default function SessionsPage() {
               className="bg-light border-dark-200 block rounded-md border p-3 transition"
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-dark-900 truncate text-sm font-medium">{session.title}</div>
                   <div className="text-dark-600 truncate text-xs">
                     {session.event?.name || '-'} •{' '}
                     {session.startTime ? new Date(session.startTime).toLocaleString('tr-TR') : '-'}
                   </div>
                 </div>
-                {session.sessionType && (
-                  <span className="bg-dark-100 text-dark-600 border-dark-200/50 rounded-full border px-2 py-0.5 text-[10px] font-medium">
-                    {session.sessionType}
-                  </span>
-                )}
+                <div className="flex shrink-0 items-center gap-2">
+                  {session.event?.id && (
+                    <Button
+                      href={`/sessions/${session.id}/edit?eventId=${session.event.id}`}
+                      variant="secondary"
+                      className="!px-2 !py-1 text-xs"
+                    >
+                      Düzenle
+                    </Button>
+                  )}
+                  {session.sessionType && (
+                    <span className="bg-dark-100 text-dark-600 border-dark-200/50 rounded-full border px-2 py-0.5 text-[10px] font-medium">
+                      {session.sessionType}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

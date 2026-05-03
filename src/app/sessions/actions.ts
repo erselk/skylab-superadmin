@@ -45,8 +45,11 @@ export async function getSessions() {
 }
 
 export async function createSession(formData: FormData) {
+  const eventDayId =
+    (formData.get('eventDayId') as string) || (formData.get('eventId') as string) || '';
+
   const data: CreateSessionRequest = {
-    eventId: formData.get('eventId') as string,
+    eventDayId,
     title: formData.get('title') as string,
     speakerName: (formData.get('speakerName') as string) || undefined,
     speakerLinkedin: (formData.get('speakerLinkedin') as string) || undefined,

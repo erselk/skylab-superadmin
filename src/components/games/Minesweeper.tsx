@@ -126,33 +126,35 @@ export function MinesweeperGame() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
+    <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
       <h3 className="text-dark text-xl font-bold">Mayın Tarlası</h3>
 
-      <div
-        className="bg-dark-200 grid gap-1 rounded p-1"
-        style={{ gridTemplateColumns: `repeat(${COLS}, 30px)` }}
-      >
-        {grid.map((row, r) =>
-          row.map((cell, c) => (
-            <div
-              key={`${r}-${c}`}
-              className={`flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-sm text-sm font-bold select-none ${
-                cell.isRevealed
-                  ? cell.isMine
-                    ? 'bg-red-500'
-                    : 'bg-gray-200'
-                  : 'bg-brand hover:bg-brand-600'
-              } `}
-              onClick={() => revealCell(r, c)}
-              onContextMenu={(e) => toggleFlag(e, r, c)}
-            >
-              {cell.isRevealed && !cell.isMine && cell.neighborMines > 0 && cell.neighborMines}
-              {cell.isRevealed && cell.isMine && '💣'}
-              {!cell.isRevealed && cell.isFlagged && '🚩'}
-            </div>
-          )),
-        )}
+      <div className="w-full max-w-[min(100%,340px)]">
+        <div
+          className="bg-dark-200 grid w-full gap-1 rounded p-1"
+          style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
+        >
+          {grid.map((row, r) =>
+            row.map((cell, c) => (
+              <div
+                key={`${r}-${c}`}
+                className={`flex aspect-square min-h-0 w-full cursor-pointer items-center justify-center rounded-sm text-xs font-bold select-none sm:text-sm ${
+                  cell.isRevealed
+                    ? cell.isMine
+                      ? 'bg-red-500'
+                      : 'bg-gray-200'
+                    : 'bg-brand hover:bg-brand-600'
+                } `}
+                onClick={() => revealCell(r, c)}
+                onContextMenu={(e) => toggleFlag(e, r, c)}
+              >
+                {cell.isRevealed && !cell.isMine && cell.neighborMines > 0 && cell.neighborMines}
+                {cell.isRevealed && cell.isMine && '💣'}
+                {!cell.isRevealed && cell.isFlagged && '🚩'}
+              </div>
+            )),
+          )}
+        </div>
       </div>
 
       {(gameOver || win) && (

@@ -134,7 +134,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
           }
         }
 
-        router.push('/events');
+        router.push(`/events/${id}`);
       } catch (error) {
         console.error('Event update error:', error);
         alert(
@@ -177,7 +177,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">
           <h2 className="mb-2 text-lg font-semibold text-red-800">Hata</h2>
           <p className="text-red-700">{error || 'Etkinlik bulunamadı'}</p>
-          <Button href="/events" variant="secondary" className="mt-4">
+          <Button href={`/events/${id}`} variant="secondary" className="mt-4">
             Geri Dön
           </Button>
         </div>
@@ -336,7 +336,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                   </div>
                   <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
                     <Button
-                      href="/events"
+                      href={`/events/${id}`}
                       variant="secondary"
                       className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
                     >

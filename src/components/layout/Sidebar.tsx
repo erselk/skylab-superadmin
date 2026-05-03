@@ -21,13 +21,11 @@ import type { UserDto } from '@/types/api';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: HiOutlineChartBar },
-  { href: '/users', label: 'Kullanıcılar', icon: HiOutlineUsers },
   { href: '/events', label: 'Etkinlikler', icon: HiOutlineCalendar },
-  { href: '/event-types', label: 'Etkinlik Tipleri', icon: HiOutlineTag },
-  { href: '/competitors', label: 'Yarışmacılar', icon: HiOutlineUser },
-  { href: '/seasons', label: 'Sezonlar', icon: HiOutlineCalendarDays },
-  { href: '/sessions', label: 'Oturumlar', icon: HiOutlineMicrophone },
   { href: '/announcements', label: 'Duyurular', icon: HiOutlineMegaphone },
+  { href: '/users', label: 'Kullanıcılar', icon: HiOutlineUsers },
+  { href: '/event-types', label: 'Etkinlik Tipleri', icon: HiOutlineTag },
+  { href: '/seasons', label: 'Sezonlar', icon: HiOutlineCalendarDays },
   { href: '/qr', label: 'QR Kodlar', icon: HiOutlineQrCode },
   { href: '/waiting-room', label: 'Oyun Alanı', icon: HiOutlinePuzzlePiece },
 ];

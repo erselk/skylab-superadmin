@@ -1,20 +1,26 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 
 const GRID_SIZE = 20;
-const CELL_SIZE = 20;
+const CELL_PCT = 100 / GRID_SIZE;
 const INITIAL_SNAKE = [[5, 5]];
 const INITIAL_DIRECTION = [1, 0];
 
 export function SnakeGame() {
+  const boardRef = useRef<HTMLDivElement>(null);
+  const directionRef = useRef(INITIAL_DIRECTION);
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState([10, 10]);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    directionRef.current = direction;
+  }, [direction]);
 
   const generateFood = useCallback(() => {
     let newFood: number[];
@@ -26,6 +32,7 @@ export function SnakeGame() {
 
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
+    directionRef.current = INITIAL_DIRECTION;
     setDirection(INITIAL_DIRECTION);
     setGameOver(false);
     setScore(0);
@@ -38,7 +45,8 @@ export function SnakeGame() {
 
     const moveSnake = setInterval(() => {
       setSnake((prevSnake) => {
-        const newHead = [prevSnake[0][0] + direction[0], prevSnake[0][1] + direction[1]];
+        const d = directionRef.current;
+        const newHead = [prevSnake[0][0] + d[0], prevSnake[0][1] + d[1]];
 
         // Check collisions
         if (
@@ -68,75 +76,98 @@ export function SnakeGame() {
     }, 150);
 
     return () => clearInterval(moveSnake);
-  }, [direction, food, gameOver, isPlaying, generateFood]);
+  }, [food, gameOver, isPlaying, generateFood]);
 
   useEffect(() => {
+    if (!isPlaying || gameOver) return;
+
     const handleKeyPress = (e: KeyboardEvent) => {
+      const [, dy] = directionRef.current;
+
       switch (e.key) {
         case 'ArrowUp':
-          if (direction[1] !== 1) setDirection([0, -1]);
+          e.preventDefault();
+          if (dy !== 1) setDirection([0, -1]);
           break;
         case 'ArrowDown':
-          if (direction[1] !== -1) setDirection([0, 1]);
+          e.preventDefault();
+          if (dy !== -1) setDirection([0, 1]);
           break;
         case 'ArrowLeft':
-          if (direction[0] !== 1) setDirection([-1, 0]);
+          e.preventDefault();
+          if (directionRef.current[0] !== 1) setDirection([-1, 0]);
           break;
         case 'ArrowRight':
-          if (direction[0] !== -1) setDirection([1, 0]);
+          e.preventDefault();
+          if (directionRef.current[0] !== -1) setDirection([1, 0]);
+          break;
+        default:
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('keydown', handleKeyPress, { passive: false });
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [direction]);
+  }, [gameOver, isPlaying]);
+
+  useEffect(() => {
+    if (isPlaying && !gameOver) {
+      queueMicrotask(() => boardRef.current?.focus({ preventScroll: true }));
+    }
+  }, [gameOver, isPlaying]);
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
+    <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
       <h3 className="text-dark text-xl font-bold">Yılan Oyunu</h3>
       <div className="text-brand text-lg font-semibold">Skor: {score}</div>
 
-      <div
-        className="bg-dark-100 border-dark-300 relative border-2"
-        style={{
-          width: GRID_SIZE * CELL_SIZE,
-          height: GRID_SIZE * CELL_SIZE,
-        }}
-      >
-        {snake.map((segment, i) => (
-          <div
-            key={i}
-            className="bg-brand absolute rounded-sm"
-            style={{
-              left: segment[0] * CELL_SIZE,
-              top: segment[1] * CELL_SIZE,
-              width: CELL_SIZE - 2,
-              height: CELL_SIZE - 2,
-            }}
-          />
-        ))}
+      <div className="w-full shrink-0">
         <div
-          className="absolute rounded-full bg-red-500"
-          style={{
-            left: food[0] * CELL_SIZE,
-            top: food[1] * CELL_SIZE,
-            width: CELL_SIZE - 2,
-            height: CELL_SIZE - 2,
-          }}
-        />
+          ref={boardRef}
+          role="application"
+          aria-label="Yılan tahtası"
+          tabIndex={0}
+          className="focus:ring-brand/40 outline-none focus-visible:ring-2"
+          style={{ touchAction: 'none' }}
+        >
+          <div className="bg-dark-100 border-dark-300 relative mx-auto box-border aspect-square w-full max-w-sm border-2">
+            {snake.map((segment, i) => (
+              <div
+                key={i}
+                className="bg-brand absolute box-border rounded-[2px]"
+                style={{
+                  left: `${segment[0] * CELL_PCT}%`,
+                  top: `${segment[1] * CELL_PCT}%`,
+                  width: `calc(${CELL_PCT}% - 4px)`,
+                  height: `calc(${CELL_PCT}% - 4px)`,
+                }}
+              />
+            ))}
+            <div
+              className="absolute box-border rounded-full bg-red-500"
+              style={{
+                left: `${food[0] * CELL_PCT}%`,
+                top: `${food[1] * CELL_PCT}%`,
+                width: `calc(${CELL_PCT}% - 4px)`,
+                height: `calc(${CELL_PCT}% - 4px)`,
+              }}
+            />
 
-        {gameOver && (
-          <div className="bg-dark/50 absolute inset-0 flex items-center justify-center text-xl font-bold text-white">
-            Oyun Bitti!
+            {gameOver && (
+              <div className="bg-dark/50 absolute inset-0 flex items-center justify-center text-xl font-bold text-white">
+                Oyun Bitti!
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="flex gap-2">
         {!isPlaying && <Button onClick={resetGame}>{gameOver ? 'Tekrar Oyna' : 'Başla'}</Button>}
       </div>
-      <p className="text-sm text-gray-500">Yön tuşları ile kontrol edin</p>
+      <p className="text-sm text-gray-500">
+        Başladıktan sonra yön tuşları ile oynayın; taşma ve sayfa kaydırması engellenir.
+      </p>
     </div>
   );
 }

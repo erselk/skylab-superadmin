@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition, useEffect, use, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
@@ -14,7 +14,7 @@ import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
 import { eventsApi } from '@/lib/api/events';
 import { getLeaderEventType } from '@/lib/utils/permissions';
-import { CompetitorDto } from '@/types/api';
+import type { CompetitorDto, EventDto } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 
 import { Modal } from '@/components/ui/Modal';
@@ -23,73 +23,109 @@ import { HiOutlineTrash } from 'react-icons/hi2';
 const competitorSchema = z.object({
   userId: z.string().min(1, 'Kullanıcı seçiniz'),
   eventId: z.string().min(1, 'Etkinlik seçiniz'),
-  points: z.preprocess(
-    (val) => (val === '' ? undefined : Number(val)),
-    z.number().min(0, 'Puan 0 veya daha büyük olmalı').optional(),
-  ),
+  points: z.preprocess((val) => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    const n = typeof val === 'string' ? Number(val) : Number(val);
+    return Number.isNaN(n) ? undefined : n;
+  }, z.number().min(0, 'Puan 0 veya daha büyük olmalı').optional()),
   winner: z.boolean().optional(),
 });
 
 export default function EditCompetitorPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<CompetitorEditSkeleton />}>
+      <EditCompetitorPageContent params={params} />
+    </Suspense>
+  );
+}
+
+function CompetitorEditSkeleton() {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Yarışmacı Düzenle" />
+      <div className="text-dark-500 mx-auto max-w-2xl px-2 text-sm">Yükleniyor…</div>
+    </div>
+  );
+}
+
+function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryEventId = searchParams.get('eventId')?.trim() ?? '';
+
   const { id } = use(params);
   const [isPending, startTransition] = useTransition();
   const [competitor, setCompetitor] = useState<CompetitorDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<{ value: string; label: string }[]>([]);
-  const [events, setEvents] = useState<{ value: string; label: string; type?: string }[]>([]);
+  const [eventFromApi, setEventFromApi] = useState<EventDto | null>(null);
   const { user: currentUser } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const resolvedEventId = competitor?.event?.id || queryEventId;
+  const resolvedEventTypeName = competitor?.event?.type?.name || eventFromApi?.type?.name;
+
   useEffect(() => {
-    if (id) {
-      Promise.all([competitorsApi.getById(id), usersApi.getAll(), eventsApi.getAll()])
-        .then(([competitorResponse, usersResponse, eventsResponse]) => {
-          if (competitorResponse.success && competitorResponse.data) {
-            setCompetitor(competitorResponse.data);
-          } else {
-            setError('Yarışmacı bulunamadı');
-          }
-          if (usersResponse.success && usersResponse.data) {
-            setUsers(
-              usersResponse.data.map((user) => ({
-                value: user.id,
-                label: `${user.firstName} ${user.lastName}`,
-              })),
-            );
-          }
-          if (eventsResponse.success && eventsResponse.data) {
-            setEvents(
-              eventsResponse.data.map((event) => ({
-                value: event.id,
-                label: event.name,
-                type: event.type?.name,
-              })),
-            );
-          }
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('Competitor fetch error:', err);
-          setError('Yarışmacı yüklenirken hata oluştu');
-          setLoading(false);
-        });
-    }
+    if (!id) return;
+
+    Promise.all([competitorsApi.getById(id), usersApi.getAll()])
+      .then(([competitorResponse, usersResponse]) => {
+        if (competitorResponse.success && competitorResponse.data) {
+          setCompetitor(competitorResponse.data);
+        } else {
+          setError('Yarışmacı bulunamadı');
+        }
+        if (usersResponse.success && usersResponse.data) {
+          setUsers(
+            usersResponse.data.map((user) => ({
+              value: user.id,
+              label: `${user.firstName} ${user.lastName}`,
+            })),
+          );
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Competitor fetch error:', err);
+        setError('Yarışmacı yüklenirken hata oluştu');
+        setLoading(false);
+      });
   }, [id]);
 
+  useEffect(() => {
+    const needEvent = queryEventId && (!competitor?.event?.name || !competitor?.event?.type?.name);
+    if (!needEvent) {
+      if (!queryEventId) setEventFromApi(null);
+      return;
+    }
+    eventsApi
+      .getById(queryEventId)
+      .then((res) => {
+        if (res.success && res.data) setEventFromApi(res.data);
+        else setEventFromApi(null);
+      })
+      .catch(() => setEventFromApi(null));
+  }, [queryEventId, competitor?.event?.name, competitor?.event?.type?.name]);
+
+  const cancelHref = resolvedEventId ? `/events/${resolvedEventId}` : '/competitors';
+
   const handleSubmit = async (data: z.infer<typeof competitorSchema>) => {
-    // Permission check
+    if (!competitor) return;
+
+    const eventId = resolvedEventId || data.eventId;
+    if (!eventId) {
+      alert('Etkinlik bilgisi eksik. Bu sayfayı etkinlik kartındaki düzenle bağlantısıyla açın.');
+      return;
+    }
+
     if (currentUser) {
       const leaderType = getLeaderEventType(currentUser);
-      if (leaderType) {
-        const selectedEvent = events.find((e) => e.value === data.eventId);
-
-        if (selectedEvent && selectedEvent.type !== leaderType) {
-          alert('Bu etkinlik için yarışmacı düzenleme yetkiniz yok.');
-          return;
-        }
+      const typeName = resolvedEventTypeName;
+      if (leaderType && typeName && typeName !== leaderType) {
+        alert('Bu etkinlik için yarışmacı düzenleme yetkiniz yok.');
+        return;
       }
     }
 
@@ -97,13 +133,18 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
       try {
         await competitorsApi.update(id, {
           userId: data.userId,
-          eventId: data.eventId,
+          eventId,
           points: data.points,
           winner: data.winner,
         });
-        router.push('/competitors');
+        router.push(`/events/${eventId}`);
       } catch (error) {
         console.error('Competitor update error:', error);
+        alert(
+          error instanceof Error
+            ? `Güncellenemedi: ${error.message}`
+            : 'Yarışmacı güncellenirken hata oluştu.',
+        );
       }
     });
   };
@@ -113,17 +154,21 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
     try {
       const response = await competitorsApi.delete(id);
       if (response.success) {
-        router.push('/competitors');
+        router.push(cancelHref);
       } else {
         console.error('Delete failed:', response);
+        alert(response.message || 'Silinemedi.');
       }
     } catch (error) {
       console.error('Delete error:', error);
+      alert(error instanceof Error ? error.message : 'Silinirken hata oluştu.');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
     }
   };
+
+  const pointsInitial = competitor?.score ?? competitor?.points;
 
   if (loading) {
     return (
@@ -139,19 +184,17 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">
           <h2 className="mb-2 text-lg font-semibold text-red-800">Hata</h2>
           <p className="text-red-700">{error || 'Yarışmacı bulunamadı'}</p>
-          <Button href="/competitors" variant="secondary" className="mt-4">
+          <Button
+            href={queryEventId ? `/events/${queryEventId}` : '/competitors'}
+            variant="secondary"
+            className="mt-4"
+          >
             Geri Dön
           </Button>
         </div>
       </div>
     );
   }
-
-  // Filter events for leader
-  const filteredEvents =
-    currentUser && getLeaderEventType(currentUser)
-      ? events.filter((e) => e.type === getLeaderEventType(currentUser))
-      : events;
 
   return (
     <div className="space-y-6">
@@ -165,7 +208,7 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
             type="button"
             variant="danger"
             onClick={() => setShowDeleteModal(true)}
-            className="flex items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
+            className="flex cursor-pointer items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
             aria-label="Yarışmacıyı sil"
           >
             <HiOutlineTrash className="text-danger h-5 w-5" />
@@ -179,8 +222,13 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
             onSubmit={handleSubmit}
             defaultValues={{
               userId: competitor.user?.id || '',
-              eventId: competitor.event?.id || '',
-              points: competitor.score ?? undefined,
+              eventId: resolvedEventId,
+              points:
+                typeof pointsInitial === 'number'
+                  ? pointsInitial
+                  : pointsInitial !== undefined && pointsInitial !== null
+                    ? Number(pointsInitial)
+                    : undefined,
               winner: competitor.winner || false,
             }}
           >
@@ -192,17 +240,30 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
                     <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
                       <p className="mb-2 text-sm font-medium text-red-800">Form hataları:</p>
                       <ul className="list-inside list-disc text-sm text-red-600">
-                        {Object.entries(formErrors).map(([key, error]) => (
+                        {Object.entries(formErrors).map(([key, err]) => (
                           <li key={key}>
-                            {key}: {error?.message as string}
+                            {key}: {err?.message as string}
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
+                  {resolvedEventId ? (
+                    <div className="border-dark-200 bg-dark-50 mb-5 rounded-lg border px-4 py-3 text-sm">
+                      <span className="text-dark-500 block text-xs">Kayıtlı etkinlik</span>
+                      <p className="text-dark-900 mt-0.5 font-medium">
+                        {competitor.event?.name || eventFromApi?.name || '—'}
+                      </p>
+                      <input type="hidden" {...methods.register('eventId')} />
+                    </div>
+                  ) : null}
+                  {!resolvedEventId ? (
+                    <p className="text-danger mb-4 text-sm">
+                      Etkinlik seçilemedi; bu sayfayı etkinlik detayındaki düzenle ikonundan açın.
+                    </p>
+                  ) : null}
                   <div className="space-y-4">
                     <Select name="userId" label="Kullanıcı" options={users} required />
-                    <Select name="eventId" label="Etkinlik" options={filteredEvents} required />
                     <TextField name="points" label="Puan" type="number" placeholder="100" />
                     <div className="flex items-end">
                       <Checkbox name="winner" label="Kazanan" />
@@ -210,16 +271,16 @@ export default function EditCompetitorPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
                     <Button
-                      href="/competitors"
+                      href={cancelHref}
                       variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
+                      className="cursor-pointer border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
                     >
                       İptal
                     </Button>
                     <Button
                       type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
+                      disabled={isPending || !resolvedEventId}
+                      className="!text-brand hover:!bg-brand border-brand cursor-pointer !bg-transparent hover:!text-white"
                     >
                       {isPending ? 'Güncelleniyor...' : 'Güncelle'}
                     </Button>

@@ -93,7 +93,6 @@ export async function createEventType(formData: FormData) {
   const name = formData.get('name') as string;
   const data: CreateEventTypeRequest = {
     name,
-    authorizedRoles: [name, `${name}_LEADER`],
   };
 
   try {

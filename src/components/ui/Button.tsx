@@ -11,6 +11,8 @@ interface ButtonProps {
   type?: 'button' | 'submit';
   disabled?: boolean;
   className?: string;
+  title?: string;
+  'aria-label'?: string;
 }
 
 export function Button({
@@ -21,6 +23,8 @@ export function Button({
   type = 'button',
   disabled,
   className,
+  title,
+  'aria-label': ariaLabel,
 }: ButtonProps) {
   const router = useRouter();
 
@@ -48,6 +52,8 @@ export function Button({
         }}
         className={combinedClassName}
         disabled={disabled}
+        title={title}
+        aria-label={ariaLabel}
       >
         {children}
       </button>
@@ -55,7 +61,14 @@ export function Button({
   }
 
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={combinedClassName}>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={combinedClassName}
+      title={title}
+      aria-label={ariaLabel}
+    >
       {children}
     </button>
   );

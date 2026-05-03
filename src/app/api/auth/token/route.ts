@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTokenFromCookies } from '@/lib/auth/token';
+import { isJwtExpired } from '@/lib/auth/jwt-expiry';
 import { refreshAccessToken } from '@/lib/auth/oauth2';
 
 export async function GET() {
@@ -8,8 +9,7 @@ export async function GET() {
     const cookieStore = await cookies();
     const token = getTokenFromCookies(cookieStore);
 
-    if (token) {
-      // Mevcut access token varsa direkt döndür.
+    if (token && !isJwtExpired(token)) {
       return NextResponse.json({ token });
     }
 

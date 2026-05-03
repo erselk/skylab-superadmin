@@ -10,18 +10,14 @@ import { Button } from '@/components/ui/Button';
 import { z } from 'zod';
 import { eventTypesApi } from '@/lib/api/event-types';
 import type { EventTypeDto, UserDto } from '@/types/api';
-import { ALLOWED_ROLES } from '@/config/roles';
 
 import { Modal } from '@/components/ui/Modal';
 import { HiOutlineTrash } from 'react-icons/hi2';
 
 const eventTypeSchema = z.object({
   name: z.string().min(2, 'En az 2 karakter olmalı'),
-  // competitive removed as it depends on backend support, absent in UpdateEventTypeRequest
-  authorizedRoles: z.array(z.string()).optional(),
 });
 
-const DEFAULT_AUTHORIZED_ROLES = ['ADMIN', 'YK', 'DK'];
 const coordinatorsCache = new Map<string, UserDto[]>();
 
 function CoordinatorsList({ eventTypeName }: { eventTypeName: string }) {
@@ -106,12 +102,8 @@ export default function EditEventTypePage() {
   const handleSubmit = async (data: z.infer<typeof eventTypeSchema>) => {
     startTransition(async () => {
       try {
-        const selectedRoles = data.authorizedRoles || [];
-        const finalRoles = Array.from(new Set([...DEFAULT_AUTHORIZED_ROLES, ...selectedRoles]));
-
         await eventTypesApi.update(id, {
           name: data.name,
-          authorizedRoles: finalRoles,
         });
         router.push('/event-types');
       } catch (error) {
@@ -136,9 +128,6 @@ export default function EditEventTypePage() {
       setShowDeleteModal(false);
     }
   };
-
-  // Listelenecek roller (Varsayılan roller hariç)
-  const displayableRoles = ALLOWED_ROLES.filter((role) => !DEFAULT_AUTHORIZED_ROLES.includes(role));
 
   if (loading) {
     return (
@@ -186,9 +175,6 @@ export default function EditEventTypePage() {
           onSubmit={handleSubmit}
           defaultValues={{
             name: eventType.name,
-            authorizedRoles: eventType.authorizedRoles
-              ? eventType.authorizedRoles.filter((r) => !DEFAULT_AUTHORIZED_ROLES.includes(r))
-              : [],
           }}
         >
           {(methods) => {
@@ -209,31 +195,6 @@ export default function EditEventTypePage() {
                 )}
                 <div className="space-y-4">
                   <TextField name="name" label="Ad" required placeholder="Workshop, Seminer, vb." />
-
-                  <div className="space-y-2 border-t border-gray-100 pt-4">
-                    <label className="text-dark-900 text-sm font-medium">
-                      Ekstra Yetkili Roller (Opsiyonel)
-                    </label>
-                    <p className="text-dark-500 mb-2 text-xs">
-                      * ADMIN, YK ve DK rolleri otomatik olarak yetkilidir.
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                      {displayableRoles.map((role) => (
-                        <label
-                          key={role}
-                          className="flex cursor-pointer items-center gap-2 rounded border border-transparent p-2 transition-colors hover:border-gray-200 hover:bg-gray-50"
-                        >
-                          <input
-                            type="checkbox"
-                            value={role}
-                            {...methods.register('authorizedRoles')}
-                            className="text-brand focus:ring-brand h-4 w-4 rounded border-gray-300"
-                          />
-                          <span className="text-dark-700 text-sm">{role}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
                 </div>
                 <div className="mt-6 flex gap-4">
                   <Button type="submit" disabled={isPending}>

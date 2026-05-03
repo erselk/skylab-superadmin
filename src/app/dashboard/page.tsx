@@ -502,33 +502,34 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              href: '/events/new',
-              title: 'Etkinlik Oluştur',
-              description: 'Takviminizi güncel tutun',
-            },
-            {
-              href: '/sessions/new',
-              title: 'Oturum Planla',
-              description: 'Etkinlik oturumlarını yönetin',
-            },
-            {
-              href: '/announcements',
-              title: 'Duyuruları Yönet',
-              description: 'Toplulukla güncel kalın',
-            },
-          ].map((action) => (
+        <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex flex-1 justify-stretch sm:justify-end">
             <Link
-              key={action.href}
-              href={action.href}
-              className="border-dark-200 hover:border-brand/60 hover:bg-brand-50/40 flex flex-col gap-1.5 rounded-lg border bg-white/60 p-3 transition"
+              href="/events/new"
+              className="border-dark-200 hover:border-brand/60 hover:bg-brand-50/40 flex w-full max-w-full flex-col gap-1.5 rounded-lg border bg-white/60 p-4 transition sm:max-w-sm"
             >
-              <span className="text-dark-900 text-sm font-semibold">{action.title}</span>
-              <span className="text-dark-500 text-xs">{action.description}</span>
+              <span className="text-dark-900 text-sm font-semibold">Etkinlik Oluştur</span>
+              <span className="text-dark-500 text-xs">Takviminizi güncel tutun</span>
             </Link>
-          ))}
+          </div>
+
+          <div className="flex shrink-0 items-center justify-center px-4 py-2">
+            <img
+              src="/logoyatay.png"
+              alt="Skylab"
+              className="h-14 w-auto max-w-[280px] object-contain brightness-0 sm:h-16 sm:max-w-[340px] lg:h-[4.5rem] lg:max-w-[400px]"
+            />
+          </div>
+
+          <div className="flex flex-1 justify-stretch sm:justify-start">
+            <Link
+              href="/announcements/new"
+              className="border-dark-200 hover:border-brand/60 hover:bg-brand-50/40 flex w-full max-w-full flex-col gap-1.5 rounded-lg border bg-white/60 p-4 transition sm:max-w-sm"
+            >
+              <span className="text-dark-900 text-sm font-semibold">Duyuru Ekle</span>
+              <span className="text-dark-500 text-xs">Topluluğa yeni duyuru paylaşın</span>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

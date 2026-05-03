@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
 const ICONS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
@@ -77,15 +77,15 @@ export function MemoryGame() {
   const isWin = cards.length > 0 && cards.every((c) => c.isMatched);
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
+    <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-md">
       <h3 className="text-dark text-xl font-bold">Hafıza Oyunu</h3>
       <div className="text-brand text-lg font-semibold">Hamle: {moves}</div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid w-full max-w-[min(100%,280px)] grid-cols-4 gap-2 sm:max-w-xs">
         {cards.map((card) => (
           <div
             key={card.id}
-            className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-md text-2xl transition-all duration-300 sm:h-16 sm:w-16 ${card.isFlipped || card.isMatched ? 'border-brand rotate-0 border-2 bg-white' : 'bg-brand rotate-180'} `}
+            className={`flex aspect-square min-h-0 w-full cursor-pointer items-center justify-center rounded-md text-lg transition-all duration-300 sm:text-2xl ${card.isFlipped || card.isMatched ? 'border-brand rotate-0 border-2 bg-white' : 'bg-brand rotate-180'} `}
             onClick={() => handleCardClick(card.id)}
           >
             {card.isFlipped || card.isMatched ? card.icon : ''}

@@ -158,7 +158,15 @@ export function GlobalErrorMessenger() {
     };
 
     const onFrontendError = createCustomErrorListener('frontend', dispatch);
-    const onBackendError = createCustomErrorListener('backend', dispatch);
+    const onBackendError: EventListener = (event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      const raw = (customEvent.detail?.message ?? '').trim().toLowerCase();
+      if (raw === 'http 404') return;
+      dispatch({
+        type: 'show',
+        payload: { kind: 'backend', message: customEvent.detail?.message ?? null },
+      });
+    };
 
     window.addEventListener('unhandledrejection', onUnhandledRejection);
     window.addEventListener('error', onError);

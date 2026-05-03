@@ -47,7 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      if (!user) {
+      // Cache'ten doldurulmuş oturumlarda gereksiz loading / login'e flush olmasın
+      if (!user && !memoryUserCache) {
         setLoading(true);
       }
       const response = await fetch('/api/auth/me', {
@@ -64,6 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(data.user));
           }
           setError(null);
+        } else if (
+          data.authenticated &&
+          !data.user &&
+          typeof data.error === 'string' &&
+          data.error.length > 0
+        ) {
+          // /api/auth/me bazen backend 502 iken kullanıcıyı null dönüyor; çıkışa zorlamayız.
+          const fallback = memoryUserCache ?? readCachedUser();
+          if (fallback) {
+            setUser(fallback);
+            memoryUserCache = fallback;
+          }
+          setError(data.error);
         } else {
           setUser(null);
           memoryUserCache = null;
@@ -106,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memoryUserCache = cachedUser;
       memoryAuthBootstrapped = true;
       setLoading(false);
+      void fetchUser();
       return;
     }
 

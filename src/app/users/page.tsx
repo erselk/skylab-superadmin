@@ -6,6 +6,7 @@ import { serverFetch } from '@/lib/api/server-client';
 import type { DataResult, UserDto as UserDtoType } from '@/types/api';
 
 export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 export default async function UsersPage() {
   let users: UserDto[] = [];
   let error: string | null = null;

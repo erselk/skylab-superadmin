@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
@@ -16,6 +16,8 @@ import { eventsApi } from '@/lib/api/events';
 import { getLeaderEventType } from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
 
+import type { EventDto } from '@/types/api';
+
 const competitorSchema = z.object({
   userId: z.string().min(1, 'Kullanıcı seçiniz'),
   eventId: z.string().min(1, 'Etkinlik seçiniz'),
@@ -27,10 +29,33 @@ const competitorSchema = z.object({
 });
 
 export default function NewCompetitorPage() {
+  return (
+    <Suspense fallback={<CompetitorsNewSkeleton />}>
+      <NewCompetitorPageContent />
+    </Suspense>
+  );
+}
+
+function CompetitorsNewSkeleton() {
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Yeni Yarışmacı" />
+      <div className="text-dark-500 mx-auto max-w-3xl px-2 text-sm">Yükleniyor…</div>
+    </div>
+  );
+}
+
+function NewCompetitorPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const lockedEventId = searchParams.get('eventId') || '';
+
   const [isPending, startTransition] = useTransition();
   const [users, setUsers] = useState<{ value: string; label: string }[]>([]);
   const [events, setEvents] = useState<{ value: string; label: string; type?: string }[]>([]);
+  const [lockedEvent, setLockedEvent] = useState<EventDto | null>(null);
+  const [lockedEventError, setLockedEventError] = useState<string | null>(null);
+  const [lockedEventLoading, setLockedEventLoading] = useState(false);
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
@@ -49,24 +74,55 @@ export default function NewCompetitorPage() {
       .catch((error) => {
         console.error('Users fetch error:', error);
       });
+  }, []);
 
+  useEffect(() => {
+    if (!lockedEventId) {
+      setLockedEvent(null);
+      setLockedEventError(null);
+      setLockedEventLoading(false);
+
+      eventsApi
+        .getAll()
+        .then((response) => {
+          if (response.success && response.data) {
+            setEvents(
+              response.data.map((event) => ({
+                value: event.id,
+                label: event.name,
+                type: event.type?.name,
+              })),
+            );
+          }
+        })
+        .catch((error) => {
+          console.error('Events fetch error:', error);
+        });
+      return;
+    }
+
+    setLockedEventLoading(true);
     eventsApi
-      .getAll()
+      .getById(lockedEventId)
       .then((response) => {
         if (response.success && response.data) {
-          setEvents(
-            response.data.map((event) => ({
-              value: event.id,
-              label: event.name,
-              type: event.type?.name,
-            })),
-          );
+          setLockedEvent(response.data);
+          setLockedEventError(null);
+          const leaderType = currentUser ? getLeaderEventType(currentUser) : null;
+          if (leaderType && response.data.type?.name !== leaderType) {
+            setLockedEventError('Bu etkinlik için yarışmacı ekleme yetkiniz yok.');
+          }
+        } else {
+          setLockedEvent(null);
+          setLockedEventError('Etkinlik bulunamadı.');
         }
       })
-      .catch((error) => {
-        console.error('Events fetch error:', error);
-      });
-  }, []);
+      .catch(() => {
+        setLockedEvent(null);
+        setLockedEventError('Etkinlik yüklenemedi.');
+      })
+      .finally(() => setLockedEventLoading(false));
+  }, [lockedEventId, currentUser]);
 
   const handleSubmit = async (data: z.infer<typeof competitorSchema>) => {
     startTransition(async () => {
@@ -77,7 +133,7 @@ export default function NewCompetitorPage() {
           points: data.points,
           winner: data.winner,
         });
-        router.push('/competitors');
+        router.push(`/events/${data.eventId}`);
       } catch (error) {
         console.error('Competitor creation error:', error);
         const rawMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
@@ -90,7 +146,6 @@ export default function NewCompetitorPage() {
     });
   };
 
-  // Filter events for leader
   const filteredEvents =
     currentUser && getLeaderEventType(currentUser)
       ? events.filter((e) => e.type === getLeaderEventType(currentUser))
@@ -98,11 +153,15 @@ export default function NewCompetitorPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Yarışmacı" description="Sisteme yeni yarışmacı ekleyin" />
+      <PageHeader title="Yeni Yarışmacı" description={lockedEvent?.name} />
 
       <div className="mx-auto max-w-3xl">
         <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">
-          <Form schema={competitorSchema} onSubmit={handleSubmit}>
+          <Form
+            schema={competitorSchema}
+            onSubmit={handleSubmit}
+            defaultValues={{ eventId: lockedEventId || undefined }}
+          >
             {(methods) => {
               const formErrors = methods.formState.errors;
               return (
@@ -119,12 +178,34 @@ export default function NewCompetitorPage() {
                       </ul>
                     </div>
                   )}
+                  {lockedEventError && lockedEventId && (
+                    <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                      {lockedEventError}
+                    </div>
+                  )}
+                  {lockedEventId && <input type="hidden" {...methods.register('eventId')} />}
+                  {lockedEventId && lockedEventLoading && !lockedEventError && (
+                    <div className="text-dark-600 mb-4 text-sm">Etkinlik bilgisi yükleniyor…</div>
+                  )}
+                  {lockedEvent && lockedEventId && !lockedEventError && (
+                    <div className="border-dark-200 bg-dark-50 mb-5 rounded-lg border px-4 py-3 text-sm">
+                      <span className="text-dark-500 block text-xs">Etkinlik</span>
+                      <p className="text-dark-900 mt-0.5 font-medium">{lockedEvent.name}</p>
+                    </div>
+                  )}
                   <div className="space-y-5">
                     <div>
                       <h3 className="text-dark-800 mb-3 text-sm font-semibold">Temel Bilgiler</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <Select name="userId" label="Kullanıcı" options={users} required />
-                        <Select name="eventId" label="Etkinlik" options={filteredEvents} required />
+                        {!lockedEventId && (
+                          <Select
+                            name="eventId"
+                            label="Etkinlik"
+                            options={filteredEvents}
+                            required
+                          />
+                        )}
                         <TextField name="points" label="Puan" type="number" placeholder="100" />
                         <div className="flex items-end">
                           <Checkbox name="winner" label="Kazanan" />
@@ -134,7 +215,7 @@ export default function NewCompetitorPage() {
                   </div>
                   <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
                     <Button
-                      href="/competitors"
+                      href={lockedEventId ? `/events/${lockedEventId}` : '/competitors'}
                       variant="secondary"
                       className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
                     >
@@ -142,7 +223,9 @@ export default function NewCompetitorPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={isPending}
+                      disabled={
+                        isPending || !!lockedEventError || (!!lockedEventId && lockedEventLoading)
+                      }
                       className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
                     >
                       {isPending ? 'Kaydediliyor...' : 'Kaydet'}

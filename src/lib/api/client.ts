@@ -126,8 +126,13 @@ class ApiClient {
           }
         }
       }
-      // 4xx (401/403 hariç) ve 5xx durumlarını backend hatası olarak yayınla
-      if (response.status >= 400 && response.status !== 401 && response.status !== 403) {
+      // 4xx (401/403/404 hariç) ve 5xx — 404 "kaynak yok", servis arızası değil
+      if (
+        response.status >= 400 &&
+        response.status !== 401 &&
+        response.status !== 403 &&
+        response.status !== 404
+      ) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('backend-error', { detail: { message: `HTTP ${response.status}` } }),
@@ -222,23 +227,29 @@ class ApiClient {
   }
 
   put<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return this.ensureToken().then(() =>
+      this.request<T>(endpoint, {
+        ...options,
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    );
   }
 
   patch<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
+    return this.ensureToken().then(() =>
+      this.request<T>(endpoint, {
+        ...options,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    );
   }
 
   delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+    return this.ensureToken().then(() =>
+      this.request<T>(endpoint, { ...options, method: 'DELETE' }),
+    );
   }
 
   postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
