@@ -12,6 +12,11 @@ import { z } from 'zod';
 import { sessionsApi } from '@/lib/api/sessions';
 import { eventDaysApi } from '@/lib/api/eventDays';
 import { eventsApi } from '@/lib/api/events';
+import { useAuth } from '@/context/AuthContext';
+import {
+  canOperateEventScheduling,
+  canOperateEventSchedulingOnEvent,
+} from '@/lib/utils/permissions';
 import type { EventDto, GetEventDayResponseDto } from '@/types/api';
 import { getInclusiveLocalCalendarDates } from '@/lib/utils/eventCalendar';
 import { zOptionalLinkedInUrl } from '@/lib/utils/linkedinZod';
@@ -66,6 +71,7 @@ function NewSessionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams.get('eventId') || '';
+  const { user, loading: authLoading } = useAuth();
 
   const [isPending, startTransition] = useTransition();
   const [eventDays, setEventDays] = useState<GetEventDayResponseDto[]>([]);
@@ -75,6 +81,21 @@ function NewSessionPageContent() {
   >('idle');
   const [daysError, setDaysError] = useState<string | null>(null);
   const [speakerPhoto, setSpeakerPhoto] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!canOperateEventScheduling(user ?? null)) {
+      router.replace(eventId ? `/events/${eventId}` : '/events');
+    }
+  }, [authLoading, user, router, eventId]);
+
+  useEffect(() => {
+    if (authLoading || !user || !canOperateEventScheduling(user)) return;
+    if (!eventId || !event) return;
+    if (!canOperateEventSchedulingOnEvent(user, event.type?.name)) {
+      router.replace(`/events/${eventId}`);
+    }
+  }, [authLoading, user, eventId, event, router]);
 
   useEffect(() => {
     if (!eventId) {
@@ -166,6 +187,10 @@ function NewSessionPageContent() {
   }, [eventId]);
 
   const handleSubmit = async (data: z.infer<typeof sessionSchema>) => {
+    if (!canOperateEventSchedulingOnEvent(user ?? null, event?.type?.name)) {
+      router.replace(eventId ? `/events/${eventId}` : '/events');
+      return;
+    }
     startTransition(async () => {
       try {
         const selectedDay = eventDays.find((d) => d.id === data.eventDayId);

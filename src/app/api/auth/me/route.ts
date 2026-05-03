@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import type { DataResult, UserDto } from '@/types/api';
+import { enrichUserRolesFromAccessToken } from '@/lib/auth/jwt-payload';
 import { getTokenFromCookies } from '@/lib/auth/token';
 import { refreshAccessToken } from '@/lib/auth/oauth2';
 
@@ -96,10 +97,19 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ /api/auth/me: Backend yanıtı başarılı, user:', backendResponse.data?.username);
 
-    // Backend DataResult formatında dönüyor, sadece data kısmını gönder
+    const bare = backendResponse.data;
+    if (!bare || typeof bare !== 'object') {
+      return NextResponse.json({
+        authenticated: true,
+        user: bare ?? null,
+      });
+    }
+
+    /** UserDto sıkça roles taşımaz; Roller JWT içinde ise menü/sync için birleştirilir */
+    const user = enrichUserRolesFromAccessToken(bare, token);
     return NextResponse.json({
       authenticated: true,
-      user: backendResponse.data,
+      user,
     });
   } catch (error) {
     console.error('❌ /api/auth/me: Hata:', error);

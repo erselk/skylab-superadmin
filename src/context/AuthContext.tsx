@@ -12,7 +12,6 @@ import {
 } from 'react';
 import type { UserDto } from '@/types/api';
 import { useRouter, usePathname } from 'next/navigation';
-import { canAccessPage, hasOnlyUserRole } from '@/lib/utils/permissions';
 
 interface AuthContextType {
   user: UserDto | null;
@@ -26,6 +25,8 @@ const AUTH_USER_STORAGE_KEY = 'auth_user';
 let memoryUserCache: UserDto | null = null;
 let memoryAuthBootstrapped = false;
 
+type AuthProviderProps = Readonly<{ children: ReactNode; initialUser?: UserDto }>;
+
 function readCachedUser(): UserDto | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -37,9 +38,12 @@ function readCachedUser(): UserDto | null {
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserDto | null>(memoryUserCache);
-  const [loading, setLoading] = useState(!memoryAuthBootstrapped && !memoryUserCache);
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [user, setUser] = useState<UserDto | null>(() => initialUser ?? memoryUserCache ?? null);
+  const [loading, setLoading] = useState(() => {
+    const boot = !!(initialUser ?? memoryUserCache ?? readCachedUser());
+    return !(memoryAuthBootstrapped || boot);
+  });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -114,6 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (didInit.current) return;
     didInit.current = true;
 
+    if (initialUser) {
+      memoryUserCache = initialUser;
+      memoryAuthBootstrapped = true;
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(initialUser));
+      }
+      setLoading(false);
+      void fetchUser();
+      return;
+    }
+
     const cachedUser = readCachedUser();
     if (cachedUser) {
       setUser(cachedUser);
@@ -130,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     fetchUser();
-  }, [fetchUser]);
+  }, [fetchUser, initialUser]);
 
   useEffect(() => {
     if (loading) return;
@@ -139,18 +154,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (pathname && !pathname.startsWith('/login')) {
         router.replace('/login');
       }
-      return;
-    }
-
-    if (hasOnlyUserRole(user)) {
-      if (pathname !== '/waiting-room') {
-        router.replace('/waiting-room');
-      }
-      return;
-    }
-
-    if (pathname && !pathname.startsWith('/login') && !canAccessPage(user, pathname)) {
-      router.replace('/dashboard');
     }
   }, [user, loading, pathname, router]);
 

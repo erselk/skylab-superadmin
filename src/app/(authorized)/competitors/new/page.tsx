@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
 import { eventsApi } from '@/lib/api/events';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import { canManageCompetitorsForEvent } from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
 
 import type { EventDto } from '@/types/api';
@@ -21,10 +21,11 @@ import type { EventDto } from '@/types/api';
 const competitorSchema = z.object({
   userId: z.string().min(1, 'Kullanıcı seçiniz'),
   eventId: z.string().min(1, 'Etkinlik seçiniz'),
-  points: z
-    .string()
-    .optional()
-    .transform((val) => (val === '' ? undefined : val ? parseFloat(val) : undefined)),
+  points: z.preprocess((val) => {
+    if (val === '' || val === undefined || val === null) return undefined;
+    const n = typeof val === 'string' ? Number(val) : Number(val);
+    return Number.isNaN(n) ? undefined : n;
+  }, z.number().min(0, 'Puan 0 veya daha büyük olmalı').optional()),
   winner: z.boolean().optional(),
 });
 
@@ -107,10 +108,11 @@ function NewCompetitorPageContent() {
       .then((response) => {
         if (response.success && response.data) {
           setLockedEvent(response.data);
-          setLockedEventError(null);
-          const leaderType = currentUser ? getLeaderEventType(currentUser) : null;
-          if (leaderType && response.data.type?.name !== leaderType) {
+          const allowed = canManageCompetitorsForEvent(currentUser, response.data.type?.name);
+          if (!allowed) {
             setLockedEventError('Bu etkinlik için yarışmacı ekleme yetkiniz yok.');
+          } else {
+            setLockedEventError(null);
           }
         } else {
           setLockedEvent(null);
@@ -125,6 +127,11 @@ function NewCompetitorPageContent() {
   }, [lockedEventId, currentUser]);
 
   const handleSubmit = async (data: z.infer<typeof competitorSchema>) => {
+    const eventType = lockedEvent?.type?.name ?? events.find((e) => e.value === data.eventId)?.type;
+    if (!canManageCompetitorsForEvent(currentUser ?? null, eventType)) {
+      router.replace(data.eventId ? `/events/${data.eventId}` : '/events');
+      return;
+    }
     startTransition(async () => {
       try {
         await competitorsApi.create({
@@ -146,10 +153,9 @@ function NewCompetitorPageContent() {
     });
   };
 
-  const filteredEvents =
-    currentUser && getLeaderEventType(currentUser)
-      ? events.filter((e) => e.type === getLeaderEventType(currentUser))
-      : events;
+  const filteredEvents = currentUser
+    ? events.filter((e) => canManageCompetitorsForEvent(currentUser, e.type))
+    : events;
 
   return (
     <div className="space-y-6">

@@ -9,7 +9,7 @@ import type { EventDto, UserDto } from '@/types/api';
 import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
 import { EventsGridClient } from './EventsGridClient';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import { canOperateEventScheduling } from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
 
 export default function EventsPage() {
@@ -18,6 +18,7 @@ export default function EventsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { user: currentUser } = useAuth();
+  const allowNewEvent = canOperateEventScheduling(currentUser ?? null);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -29,17 +30,7 @@ export default function EventsPage() {
       ]);
 
       if (eventsResponse.success && eventsResponse.data) {
-        let data = eventsResponse.data;
-
-        // Filter for leaders based on event type
-        if (currentUser?.roles?.length) {
-          const leaderEventType = getLeaderEventType(currentUser);
-          if (leaderEventType) {
-            data = data.filter((e) => e.type?.name === leaderEventType);
-          }
-        }
-
-        setEvents(data);
+        setEvents(eventsResponse.data);
       } else {
         setError(eventsResponse.message || 'Etkinlikler yüklenirken hata oluştu');
       }
@@ -67,21 +58,23 @@ export default function EventsPage() {
         title="Etkinlikler"
         description="Tüm etkinlikleri görüntüleyin ve yönetin"
         actions={
-          <Link href="/events/new">
-            <Button>
-              <span className="flex items-center gap-2">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Yeni Etkinlik
-              </span>
-            </Button>
-          </Link>
+          allowNewEvent ? (
+            <Link href="/events/new">
+              <Button>
+                <span className="flex items-center gap-2">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Yeni Etkinlik
+                </span>
+              </Button>
+            </Link>
+          ) : undefined
         }
       />
 

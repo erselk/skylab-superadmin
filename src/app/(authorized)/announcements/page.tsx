@@ -10,9 +10,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AnnouncementDto } from '@/types/api';
 import { announcementsApi } from '@/lib/api/announcements';
+import { useAuth } from '@/context/AuthContext';
+import { eventTypeMatchesLeaderScope, getLeaderEventType } from '@/lib/utils/permissions';
 
 export default function AnnouncementsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,16 @@ export default function AnnouncementsPage() {
     try {
       const response = await announcementsApi.getAll({ includeEventType: true });
       if (response.success && response.data) {
-        setAnnouncements(response.data);
+        let data = response.data;
+        const scope = user ? getLeaderEventType(user) : null;
+        if (scope) {
+          data = data.filter((a) => {
+            const tag = a.eventType?.name;
+            if (!tag) return true;
+            return eventTypeMatchesLeaderScope(tag, scope);
+          });
+        }
+        setAnnouncements(data);
       } else {
         setError(response.message || 'Duyurular yüklenirken hata oluştu');
       }
@@ -37,7 +49,7 @@ export default function AnnouncementsPage() {
 
   useEffect(() => {
     loadAnnouncements();
-  }, []);
+  }, [user]);
 
   const handleEdit = (announcement: AnnouncementDto) => {
     router.push(`/announcements/${announcement.id}/edit`);

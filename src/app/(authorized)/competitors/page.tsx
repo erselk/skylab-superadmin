@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { CompetitorDto } from '@/types/api';
 import { competitorsApi } from '@/lib/api/competitors';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import { eventTypeMatchesLeaderScope, getLeaderEventType } from '@/lib/utils/permissions';
 import { CompetitorsGridClient } from './CompetitorsGridClient';
 import { useAuth } from '@/context/AuthContext';
 
@@ -32,7 +32,9 @@ export default function CompetitorsPage() {
         if (currentUser?.roles?.length) {
           const leaderEventType = getLeaderEventType(currentUser);
           if (leaderEventType) {
-            data = data.filter((c) => c.event?.type?.name === leaderEventType);
+            data = data.filter((c) =>
+              eventTypeMatchesLeaderScope(c.event?.type?.name, leaderEventType),
+            );
           }
         }
 

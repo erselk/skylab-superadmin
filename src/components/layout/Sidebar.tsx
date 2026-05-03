@@ -2,52 +2,54 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   HiOutlineCalendar,
   HiOutlineCalendarDays,
   HiOutlineChartBar,
   HiOutlineMegaphone,
-  HiOutlineMicrophone,
   HiOutlineQrCode,
+  HiOutlineSquares2X2,
   HiOutlineTag,
-  HiOutlineUser,
   HiOutlineUsers,
   HiOutlinePuzzlePiece,
   HiOutlineArrowRightOnRectangle,
 } from 'react-icons/hi2';
 import { useAuth } from '@/context/AuthContext';
+
+import type { SidebarNavLink } from '@/lib/navigation/sidebar-nav';
 import type { UserDto } from '@/types/api';
+import type { IconType } from 'react-icons';
 
-const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: HiOutlineChartBar },
-  { href: '/events', label: 'Etkinlikler', icon: HiOutlineCalendar },
-  { href: '/announcements', label: 'Duyurular', icon: HiOutlineMegaphone },
-  { href: '/users', label: 'Kullanıcılar', icon: HiOutlineUsers },
-  { href: '/event-types', label: 'Etkinlik Tipleri', icon: HiOutlineTag },
-  { href: '/seasons', label: 'Sezonlar', icon: HiOutlineCalendarDays },
-  { href: '/qr', label: 'QR Kodlar', icon: HiOutlineQrCode },
-  { href: '/waiting-room', label: 'Oyun Alanı', icon: HiOutlinePuzzlePiece },
-];
-
-type SidebarProps = {
-  isMobileOpen?: boolean;
-  onMobileClose?: () => void;
+const NAV_ICON_BY_HREF: Record<string, IconType> = {
+  '/dashboard': HiOutlineChartBar,
+  '/events': HiOutlineCalendar,
+  '/announcements': HiOutlineMegaphone,
+  '/seasons': HiOutlineCalendarDays,
+  '/event-types': HiOutlineTag,
+  '/users': HiOutlineUsers,
+  '/qr': HiOutlineQrCode,
+  '/waiting-room': HiOutlinePuzzlePiece,
 };
 
-export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
+type SidebarProps = Readonly<{
+  navLinks: readonly SidebarNavLink[];
+  prefetchedUser: UserDto;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
+}>;
+
+export function Sidebar({
+  navLinks,
+  prefetchedUser,
+  isMobileOpen = false,
+  onMobileClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [stableUser, setStableUser] = useState<UserDto | null>(null);
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const effectiveUser = user ?? stableUser;
-
-  useEffect(() => {
-    if (user) {
-      setStableUser(user);
-    }
-  }, [user]);
+  const effectiveUser = user ?? prefetchedUser;
 
   const handleLogout = async () => {
     try {
@@ -65,26 +67,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   };
 
   const handleNavigate = () => {
-    if (onMobileClose) {
-      onMobileClose();
-    }
+    onMobileClose?.();
   };
 
   const renderUserSection = (showDetails: boolean) => {
-    if (!effectiveUser) {
-      return (
-        <div className={`flex items-center gap-3 ${showDetails ? '' : 'justify-center'}`}>
-          <div className="bg-dark-700 h-10 w-10 flex-shrink-0 animate-pulse rounded-full" />
-          {showDetails && (
-            <div className="min-w-0 flex-1">
-              <div className="bg-dark-700 mb-1.5 h-4 w-3/4 animate-pulse rounded" />
-              <div className="bg-dark-700 h-3 w-2/3 animate-pulse rounded" />
-            </div>
-          )}
-        </div>
-      );
-    }
-
     const initials =
       effectiveUser.firstName?.[0]?.toUpperCase() ||
       effectiveUser.username?.[0]?.toUpperCase() ||
@@ -159,10 +145,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-2 py-4">
         <ul className="space-y-2">
-          {menuItems.map((item) => {
+          {navLinks.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== '/dashboard' && pathname?.startsWith(item.href + '/'));
+              (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}/`));
 
             const linkClasses = [
               'flex items-center rounded-lg text-sm font-medium transition-colors',
@@ -170,10 +156,12 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
               isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
             ].join(' ');
 
+            const Icon = NAV_ICON_BY_HREF[item.href] ?? HiOutlineSquares2X2;
+
             return (
               <li key={item.href}>
                 <Link href={item.href} className={linkClasses} onClick={handleNavigate}>
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                  <Icon className="h-5 w-5 flex-shrink-0" />
                   {showLabels && <span className="whitespace-nowrap">{item.label}</span>}
                 </Link>
               </li>

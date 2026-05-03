@@ -1,14 +1,18 @@
-// Backend SecurityConfig.java ve gateway rollerine göre normalize edilmiş roller
+import {
+  SKYLAB_EVENT_TYPE_ROLE_GROUPS,
+  SKYLAB_LEADER_ROLES,
+  SKYLAB_PRIVILEGED_ROLES,
+} from '@/config/skylab-opa-roles';
+
+const ROLE_GROUP_VALUES = Object.values(SKYLAB_EVENT_TYPE_ROLE_GROUPS).flat() as readonly string[];
+/** Lider kümesinde olup bir event grubunda tek başına yazılmamış roller (ör. SKYSEC_LEADER) */
+const LEADER_EXTRA = SKYLAB_LEADER_ROLES.filter((r) => !ROLE_GROUP_VALUES.includes(r));
+
+// Backend LDAP / gateway — OPA privileged + event_type_roles + fazladan leader roller
 export const ALLOWED_ROLES = [
-  'ADMIN',
-  'YK',
-  'DK',
-  'GECEKODU',
-  'GECEKODU_LEADER',
-  'AGC',
-  'AGC_LEADER',
-  'BIZBIZE',
-  'BIZBIZE_LEADER',
+  ...SKYLAB_PRIVILEGED_ROLES,
+  ...ROLE_GROUP_VALUES,
+  ...LEADER_EXTRA,
   'USER',
 ] as const;
 
@@ -25,6 +29,7 @@ export const ASSIGNABLE_ROLES_BY_ROLE: Record<AllowedRole, AllowedRole[]> = {
   GECEKODU_LEADER: ['USER'],
   AGC_LEADER: ['USER'],
   BIZBIZE_LEADER: ['USER'],
+  SKYSEC_LEADER: ['USER'],
   USER: [],
 };
 

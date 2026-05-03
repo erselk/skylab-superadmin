@@ -12,6 +12,11 @@ import { HiOutlineTrash } from 'react-icons/hi2';
 import { Button } from '@/components/ui/Button';
 import { z } from 'zod';
 import { sessionsApi } from '@/lib/api/sessions';
+import { useAuth } from '@/context/AuthContext';
+import {
+  canOperateEventScheduling,
+  canOperateEventSchedulingOnEvent,
+} from '@/lib/utils/permissions';
 import { eventDaysApi } from '@/lib/api/eventDays';
 import { eventsApi } from '@/lib/api/events';
 import type { EventDto, GetEventDayResponseDto, SessionDto } from '@/types/api';
@@ -89,6 +94,7 @@ function EditSessionPageContent() {
   const sessionId = typeof params?.id === 'string' ? params.id : '';
 
   const eventId = searchParams.get('eventId') || '';
+  const { user, loading: authLoading } = useAuth();
 
   const [isPending, startTransition] = useTransition();
   const [eventDays, setEventDays] = useState<GetEventDayResponseDto[]>([]);
@@ -96,6 +102,21 @@ function EditSessionPageContent() {
   const [session, setSession] = useState<SessionDto | null>(null);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!canOperateEventScheduling(user ?? null)) {
+      router.replace(eventId ? `/events/${eventId}` : '/events');
+    }
+  }, [authLoading, user, router, eventId]);
+
+  useEffect(() => {
+    if (authLoading || !user || !canOperateEventScheduling(user)) return;
+    if (!eventId || !event) return;
+    if (!canOperateEventSchedulingOnEvent(user, event.type?.name)) {
+      router.replace(`/events/${eventId}`);
+    }
+  }, [authLoading, user, eventId, event, router]);
 
   useEffect(() => {
     if (!sessionId || !eventId) {
@@ -146,6 +167,10 @@ function EditSessionPageContent() {
 
   const handleSubmit = async (data: z.infer<typeof editSessionSchema>) => {
     if (!sessionId || !session) return;
+    if (!canOperateEventSchedulingOnEvent(user ?? null, event?.type?.name)) {
+      router.replace(eventId ? `/events/${eventId}` : '/events');
+      return;
+    }
 
     startTransition(async () => {
       try {

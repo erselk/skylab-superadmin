@@ -13,6 +13,12 @@ import { sessionsApi } from '@/lib/api/sessions';
 import { competitorsApi } from '@/lib/api/competitors';
 import { ticketsApi } from '@/lib/api/tickets';
 import type { EventDto, SessionDto, CompetitorDto, GetTicketResponseDto } from '@/types/api';
+import { useAuth } from '@/context/AuthContext';
+import {
+  canManageCompetitorsForEvent,
+  canManageEventAudienceAdminViews,
+  canOperateEventSchedulingOnEvent,
+} from '@/lib/utils/permissions';
 
 function competitorNumericSortValue(c: CompetitorDto): number {
   const v = c.score ?? c.points;
@@ -57,6 +63,8 @@ async function resolveSessionsForEvent(
 export default function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { user } = useAuth();
+  const showAudienceAdminSections = canManageEventAudienceAdminViews(user);
 
   const [event, setEvent] = useState<EventDto | null>(null);
   const [sessions, setSessions] = useState<SessionDto[]>([]);
@@ -78,7 +86,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           eventsApi.getById(id),
           sessionsApi.getAll(),
           competitorsApi.getAll(),
-          ticketsApi.getByEvent(id),
+          showAudienceAdminSections
+            ? ticketsApi.getByEvent(id)
+            : Promise.resolve({ success: true as const, data: [] }),
         ]);
 
         if (eventRes.success && eventRes.data) {
@@ -111,7 +121,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     };
 
     fetchData();
-  }, [id]);
+  }, [id, showAudienceAdminSections]);
 
   const competitorsSortedByPoints = useMemo(
     () =>
@@ -127,6 +137,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
   const handleDeleteEvent = async () => {
     if (!event) return;
+    if (!canOperateEventSchedulingOnEvent(user, event.type?.name)) {
+      setEventDeleteOpen(false);
+      return;
+    }
     setEventDeleting(true);
     try {
       const res = await eventsApi.delete(id);
@@ -165,6 +179,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     );
   }
 
+  const canMutateSchedule = canOperateEventSchedulingOnEvent(user, event.type?.name);
+  const canManageCompetitorsUi = canManageCompetitorsForEvent(user, event.type?.name);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -175,33 +192,36 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             <Button href="/events" variant="secondary">
               Geri Dön
             </Button>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => setEventDeleteOpen(true)}
-              className="whitespace-nowrap"
-            >
-              Etkinliği sil
-            </Button>
+            {canMutateSchedule ? (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => setEventDeleteOpen(true)}
+                className="whitespace-nowrap"
+              >
+                Etkinliği sil
+              </Button>
+            ) : null}
           </>
         }
       />
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Sol Taraf - %70 */}
         <div className="w-full space-y-6 lg:w-[70%]">
           {/* Etkinlik Detayları Kartı */}
           <div className="bg-light border-dark-200 overflow-hidden rounded-xl border shadow-sm">
             <div className="border-dark-200 bg-dark-50 flex items-center justify-between border-b p-4">
               <h2 className="text-dark-900 text-lg font-semibold">Genel Bilgiler</h2>
-              <Button
-                href={`/events/${id}/edit`}
-                variant="secondary"
-                className="flex items-center gap-2 !px-3 !py-1.5 text-sm"
-              >
-                <HiOutlinePencilSquare className="h-4 w-4" />
-                Düzenle
-              </Button>
+              {canMutateSchedule ? (
+                <Button
+                  href={`/events/${id}/edit`}
+                  variant="secondary"
+                  className="flex items-center gap-2 !px-3 !py-1.5 text-sm"
+                >
+                  <HiOutlinePencilSquare className="h-4 w-4" />
+                  Düzenle
+                </Button>
+              ) : null}
             </div>
             <div className="space-y-4 p-5">
               <div className="grid grid-cols-2 gap-4">
@@ -241,13 +261,15 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           <div className="bg-light border-dark-200 overflow-hidden rounded-xl border shadow-sm">
             <div className="border-dark-200 bg-dark-50 flex items-center justify-between border-b p-4">
               <h2 className="text-dark-900 text-lg font-semibold">Oturumlar ({sessions.length})</h2>
-              <Button
-                href={`/sessions/new?eventId=${id}`}
-                className="flex items-center gap-2 !px-3 !py-1.5 text-sm"
-              >
-                <HiOutlinePlus className="h-4 w-4" />
-                Yeni Oturum
-              </Button>
+              {canMutateSchedule ? (
+                <Button
+                  href={`/sessions/new?eventId=${id}`}
+                  className="flex items-center gap-2 !px-3 !py-1.5 text-sm"
+                >
+                  <HiOutlinePlus className="h-4 w-4" />
+                  Yeni Oturum
+                </Button>
+              ) : null}
             </div>
             <div className="p-5">
               {sessions.length === 0 ? (
@@ -282,16 +304,18 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                           </a>
                         ) : null}
                       </div>
-                      <Button
-                        href={`/sessions/${session.id}/edit?eventId=${id}`}
-                        variant="secondary"
-                        title="Oturumu düzenle"
-                        aria-label="Oturumu düzenle"
-                        className="border-dark-200 !inline-flex shrink-0 !items-center !gap-1.5 !px-3 !py-2 text-xs font-medium shadow-sm"
-                      >
-                        <HiOutlinePencilSquare className="h-4 w-4 shrink-0" />
-                        Düzenle
-                      </Button>
+                      {canMutateSchedule ? (
+                        <Button
+                          href={`/sessions/${session.id}/edit?eventId=${id}`}
+                          variant="secondary"
+                          title="Oturumu düzenle"
+                          aria-label="Oturumu düzenle"
+                          className="border-dark-200 !inline-flex shrink-0 !items-center !gap-1.5 !px-3 !py-2 text-xs font-medium shadow-sm"
+                        >
+                          <HiOutlinePencilSquare className="h-4 w-4 shrink-0" />
+                          Düzenle
+                        </Button>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -300,21 +324,22 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        {/* Sağ Taraf - %30 */}
         <div className="w-full lg:w-[30%]">
           {/* Yarışmacılar Kartı */}
           <div className="bg-light border-dark-200 sticky top-6 overflow-hidden rounded-xl border shadow-sm">
-            <div className="border-dark-200 bg-dark-50 flex items-center justify-between border-b p-4">
+            <div className="border-dark-200 bg-dark-50 flex items-center justify-between gap-2 border-b p-4">
               <h2 className="text-dark-900 text-lg font-semibold">
                 Yarışmacılar ({competitors.length})
               </h2>
-              <Button
-                href={`/competitors/new?eventId=${id}`}
-                className="flex items-center gap-2 !px-3 !py-1.5 text-sm"
-              >
-                <HiOutlinePlus className="h-4 w-4" />
-                Ekle
-              </Button>
+              {canManageCompetitorsUi ? (
+                <Button
+                  href={`/competitors/new?eventId=${id}`}
+                  className="flex shrink-0 items-center gap-2 !px-3 !py-1.5 text-sm"
+                >
+                  <HiOutlinePlus className="h-4 w-4" />
+                  Ekle
+                </Button>
+              ) : null}
             </div>
             <div className="max-h-[600px] overflow-y-auto p-5">
               {competitors.length === 0 ? (
@@ -324,7 +349,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                   {competitorsSortedByPoints.map((competitor) => (
                     <div
                       key={competitor.id}
-                      className="border-dark-200 bg-light-50 hover:border-brand-300 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 transition-colors"
+                      className={`border-dark-200 bg-light-50 flex flex-wrap items-center gap-3 rounded-lg border p-3 transition-colors ${canManageCompetitorsUi ? 'hover:border-brand-300 justify-between' : ''}`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="text-dark-900 truncate text-sm font-medium">
@@ -349,17 +374,19 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center">
-                        <Button
-                          href={`/competitors/${competitor.id}/edit?eventId=${id}`}
-                          variant="secondary"
-                          className="border-dark-300 inline-flex cursor-pointer items-center justify-center !p-2 shadow-sm"
-                          title="Düzenle"
-                          aria-label="Yarışmacıyı düzenle"
-                        >
-                          <HiOutlinePencilSquare className="h-4 w-4 shrink-0" />
-                        </Button>
-                      </div>
+                      {canManageCompetitorsUi ? (
+                        <div className="flex shrink-0 items-center">
+                          <Button
+                            href={`/competitors/${competitor.id}/edit?eventId=${id}`}
+                            variant="secondary"
+                            className="border-dark-300 inline-flex cursor-pointer items-center justify-center !p-2 shadow-sm"
+                            title="Düzenle"
+                            aria-label="Yarışmacıyı düzenle"
+                          >
+                            <HiOutlinePencilSquare className="h-4 w-4 shrink-0" />
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -369,161 +396,164 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* Full Genişlik - Katılımcılar */}
-      <div className="bg-light border-dark-200 mt-6 overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-dark-200 bg-dark-50 flex items-center justify-between border-b p-4">
-          <h2 className="text-dark-900 text-lg font-semibold">
-            Katılımcılar / Biletler ({tickets.length})
-          </h2>
-        </div>
-        <div className="overflow-x-auto p-0">
-          {tickets.length === 0 ? (
-            <p className="text-dark-500 py-6 text-center text-sm">Katılımcı bulunmuyor.</p>
-          ) : (
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="bg-dark-50 border-dark-200 text-dark-500 border-b text-xs uppercase">
-                  <th className="p-4 font-medium">Bilet Tipi</th>
-                  <th className="p-4 font-medium">Ad Soyad</th>
-                  <th className="p-4 font-medium">Email</th>
-                  <th className="p-4 font-medium">Okul/Bölüm</th>
-                  <th className="p-4 font-medium">Bilet ID</th>
-                </tr>
-              </thead>
-              <tbody className="divide-dark-200 divide-y">
-                {tickets.map((ticket) => {
-                  const isGuest = ticket.ticketType === 'GUEST';
-                  const name = isGuest
-                    ? `${ticket.guestFirstName || ''} ${ticket.guestLastName || ''}`
-                    : `${ticket.owner?.firstName || ''} ${ticket.owner?.lastName || ''}`;
-                  const email = isGuest ? ticket.guestEmail : ticket.owner?.email;
-                  const school = isGuest
-                    ? `${ticket.guestUniversity || ''} - ${ticket.guestDepartment || ''}`
-                    : `${ticket.owner?.university || ''} - ${ticket.owner?.department || ''}`;
-                  const isExpanded = expandedTicketId === ticket.id;
+      {showAudienceAdminSections ? (
+        <div className="bg-light border-dark-200 mt-6 overflow-hidden rounded-xl border shadow-sm">
+          <div className="border-dark-200 bg-dark-50 flex items-center justify-between border-b p-4">
+            <h2 className="text-dark-900 text-lg font-semibold">
+              Katılımcılar / Biletler ({tickets.length})
+            </h2>
+          </div>
+          <div className="overflow-x-auto p-0">
+            {tickets.length === 0 ? (
+              <p className="text-dark-500 py-6 text-center text-sm">Katılımcı bulunmuyor.</p>
+            ) : (
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="bg-dark-50 border-dark-200 text-dark-500 border-b text-xs uppercase">
+                    <th className="p-4 font-medium">Bilet Tipi</th>
+                    <th className="p-4 font-medium">Ad Soyad</th>
+                    <th className="p-4 font-medium">Email</th>
+                    <th className="p-4 font-medium">Okul/Bölüm</th>
+                    <th className="p-4 font-medium">Bilet ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-dark-200 divide-y">
+                  {tickets.map((ticket) => {
+                    const isGuest = ticket.ticketType === 'GUEST';
+                    const name = isGuest
+                      ? `${ticket.guestFirstName || ''} ${ticket.guestLastName || ''}`
+                      : `${ticket.owner?.firstName || ''} ${ticket.owner?.lastName || ''}`;
+                    const email = isGuest ? ticket.guestEmail : ticket.owner?.email;
+                    const school = isGuest
+                      ? `${ticket.guestUniversity || ''} - ${ticket.guestDepartment || ''}`
+                      : `${ticket.owner?.university || ''} - ${ticket.owner?.department || ''}`;
+                    const isExpanded = expandedTicketId === ticket.id;
 
-                  return (
-                    <React.Fragment key={ticket.id}>
-                      <tr
-                        className="hover:bg-dark-50 cursor-pointer transition-colors"
-                        onClick={() => setExpandedTicketId(isExpanded ? null : ticket.id)}
-                      >
-                        <td className="p-4 text-sm font-medium">
-                          <span
-                            className={`rounded px-2 py-1 text-xs ${isGuest ? 'bg-warning-100 text-warning-800' : 'bg-success-100 text-success-800'}`}
-                          >
-                            {isGuest ? 'Misafir' : 'Kayıtlı Üye'}
-                          </span>
-                        </td>
-                        <td className="text-dark-900 p-4 text-sm">{name}</td>
-                        <td className="text-dark-600 p-4 text-sm">{email}</td>
-                        <td className="text-dark-600 p-4 text-sm">{school}</td>
-                        <td className="text-dark-400 max-w-[120px] truncate p-4 font-mono text-xs">
-                          {ticket.id}
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr className="bg-dark-50">
-                          <td colSpan={5} className="p-6">
-                            <div className="flex gap-6">
-                              <div className="flex-1 space-y-3">
-                                <h4 className="text-dark-900 border-dark-200 border-b pb-2 text-sm font-semibold">
-                                  Bilet Detayları
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-dark-500 mb-1 block text-xs">
-                                      Telefon
-                                    </span>
-                                    <span className="text-dark-900">
-                                      {isGuest
-                                        ? ticket.guestPhoneNumber
-                                        : ticket.owner?.phoneNumber || '-'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-dark-500 mb-1 block text-xs">
-                                      Sınıf / Derece
-                                    </span>
-                                    <span className="text-dark-900">
-                                      {isGuest ? ticket.guestGrade : '-'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-dark-500 mb-1 block text-xs">
-                                      Mail Gönderildi Mi?
-                                    </span>
-                                    <span className="text-dark-900">
-                                      {ticket.sent ? 'Evet' : 'Hayır'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex-1 space-y-3">
-                                <h4 className="text-dark-900 border-dark-200 border-b pb-2 text-sm font-semibold">
-                                  Check-in Geçmişi
-                                </h4>
-                                {ticket.checkIns && ticket.checkIns.length > 0 ? (
-                                  <ul className="space-y-2">
-                                    {ticket.checkIns.map((ci) => (
-                                      <li
-                                        key={ci.id}
-                                        className="bg-light border-dark-200 flex justify-between rounded border p-2 text-xs"
-                                      >
-                                        <span className="text-dark-700">
-                                          Gün ID: {ci.eventDayId || '-'}
-                                        </span>
-                                        <span className="text-dark-500">
-                                          {ci.createdAt
-                                            ? new Date(ci.createdAt).toLocaleString('tr-TR')
-                                            : ''}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-dark-500 text-xs">
-                                    Henüz check-in yapılmamış.
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                    return (
+                      <React.Fragment key={ticket.id}>
+                        <tr
+                          className="hover:bg-dark-50 cursor-pointer transition-colors"
+                          onClick={() => setExpandedTicketId(isExpanded ? null : ticket.id)}
+                        >
+                          <td className="p-4 text-sm font-medium">
+                            <span
+                              className={`rounded px-2 py-1 text-xs ${isGuest ? 'bg-warning-100 text-warning-800' : 'bg-success-100 text-success-800'}`}
+                            >
+                              {isGuest ? 'Misafir' : 'Kayıtlı Üye'}
+                            </span>
+                          </td>
+                          <td className="text-dark-900 p-4 text-sm">{name}</td>
+                          <td className="text-dark-600 p-4 text-sm">{email}</td>
+                          <td className="text-dark-600 p-4 text-sm">{school}</td>
+                          <td className="text-dark-400 max-w-[120px] truncate p-4 font-mono text-xs">
+                            {ticket.id}
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+                        {isExpanded && (
+                          <tr className="bg-dark-50">
+                            <td colSpan={5} className="p-6">
+                              <div className="flex gap-6">
+                                <div className="flex-1 space-y-3">
+                                  <h4 className="text-dark-900 border-dark-200 border-b pb-2 text-sm font-semibold">
+                                    Bilet Detayları
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-dark-500 mb-1 block text-xs">
+                                        Telefon
+                                      </span>
+                                      <span className="text-dark-900">
+                                        {isGuest
+                                          ? ticket.guestPhoneNumber
+                                          : ticket.owner?.phoneNumber || '-'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-dark-500 mb-1 block text-xs">
+                                        Sınıf / Derece
+                                      </span>
+                                      <span className="text-dark-900">
+                                        {isGuest ? ticket.guestGrade : '-'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-dark-500 mb-1 block text-xs">
+                                        Mail Gönderildi Mi?
+                                      </span>
+                                      <span className="text-dark-900">
+                                        {ticket.sent ? 'Evet' : 'Hayır'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                  <h4 className="text-dark-900 border-dark-200 border-b pb-2 text-sm font-semibold">
+                                    Check-in Geçmişi
+                                  </h4>
+                                  {ticket.checkIns && ticket.checkIns.length > 0 ? (
+                                    <ul className="space-y-2">
+                                      {ticket.checkIns.map((ci) => (
+                                        <li
+                                          key={ci.id}
+                                          className="bg-light border-dark-200 flex justify-between rounded border p-2 text-xs"
+                                        >
+                                          <span className="text-dark-700">
+                                            Gün ID: {ci.eventDayId || '-'}
+                                          </span>
+                                          <span className="text-dark-500">
+                                            {ci.createdAt
+                                              ? new Date(ci.createdAt).toLocaleString('tr-TR')
+                                              : ''}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p className="text-dark-500 text-xs">
+                                      Henüz check-in yapılmamış.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      <Modal
-        isOpen={eventDeleteOpen}
-        onClose={() => {
-          if (!eventDeleting) setEventDeleteOpen(false);
-        }}
-        title="Etkinliği sil"
-      >
-        <p className="text-dark-700 text-sm">
-          <strong>{event.name}</strong> etkinliğini silmek istediğinize emin misiniz? Bu işlem geri
-          alınamaz.
-        </p>
-        <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setEventDeleteOpen(false)}
-            disabled={eventDeleting}
-          >
-            Vazgeç
-          </Button>
-          <Button variant="danger" onClick={handleDeleteEvent} disabled={eventDeleting}>
-            {eventDeleting ? 'Siliniyor…' : 'Sil'}
-          </Button>
-        </div>
-      </Modal>
+      {canMutateSchedule ? (
+        <Modal
+          isOpen={eventDeleteOpen}
+          onClose={() => {
+            if (!eventDeleting) setEventDeleteOpen(false);
+          }}
+          title="Etkinliği sil"
+        >
+          <p className="text-dark-700 text-sm">
+            <strong>{event.name}</strong> etkinliğini silmek istediğinize emin misiniz? Bu işlem
+            geri alınamaz.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setEventDeleteOpen(false)}
+              disabled={eventDeleting}
+            >
+              Vazgeç
+            </Button>
+            <Button variant="danger" onClick={handleDeleteEvent} disabled={eventDeleting}>
+              {eventDeleting ? 'Siliniyor…' : 'Sil'}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 }

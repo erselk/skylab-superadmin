@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -18,7 +18,12 @@ import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
 import { seasonsApi } from '@/lib/api/seasons';
 import { convertGMT3ToGMT0, getCurrentDateTimeGMT3 } from '@/lib/utils/date';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import {
+  canEditFullEventMetadata,
+  canOperateEventScheduling,
+  eventTypeMatchesLeaderScope,
+  getLeaderEventType,
+} from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
 import type { UserDto } from '@/types/api';
 
@@ -55,18 +60,39 @@ export default function NewEventPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreatingEventType, setIsCreatingEventType] = useState(false);
   const eventFormMethodsRef = useRef<any>(null);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
+
+  /** Lider olmayan ekip üyesi doğrudan URL ile giremesin */
+  useEffect(() => {
+    if (authLoading) return;
+    if (!canOperateEventScheduling(currentUser ?? null)) {
+      router.replace('/events');
+    }
+  }, [authLoading, currentUser, router]);
   const [leaderEventTypeId, setLeaderEventTypeId] = useState<string | null>(null);
   const closeEventTypeModal = () => setIsModalOpen(false);
+  const showFullEventFields = canEditFullEventMetadata(currentUser);
 
-  const loadInitialOptions = () => {
+  const checkLeaderRole = (user: UserDto, types: { value: string; label: string }[]) => {
+    const leaderTypeName = getLeaderEventType(user);
+    if (leaderTypeName) {
+      const matchedType = types.find((t) => eventTypeMatchesLeaderScope(t.label, leaderTypeName));
+      if (matchedType) {
+        setLeaderEventTypeId(matchedType.value);
+        if (eventFormMethodsRef.current) {
+          eventFormMethodsRef.current.setValue('eventTypeId', matchedType.value);
+        }
+      }
+    }
+  };
+
+  const reloadEventTypesList = useCallback(() => {
     eventTypesApi
       .getAll()
       .then((response) => {
         if (response.success && response.data) {
           const types = response.data.map((et) => ({ value: et.id, label: et.name }));
           setEventTypes(types);
-
           if (currentUser) {
             checkLeaderRole(currentUser, types);
           }
@@ -75,7 +101,17 @@ export default function NewEventPage() {
       .catch((error) => {
         console.error('Event types fetch error:', error);
       });
+  }, [currentUser]);
 
+  useEffect(() => {
+    reloadEventTypesList();
+  }, [reloadEventTypesList]);
+
+  useEffect(() => {
+    if (!canEditFullEventMetadata(currentUser)) {
+      setSeasons([]);
+      return;
+    }
     seasonsApi
       .getAll()
       .then((response) => {
@@ -86,50 +122,32 @@ export default function NewEventPage() {
       .catch((error) => {
         console.error('Seasons fetch error:', error);
       });
-  };
-
-  const checkLeaderRole = (user: UserDto, types: { value: string; label: string }[]) => {
-    const leaderTypeName = getLeaderEventType(user);
-    if (leaderTypeName) {
-      const matchedType = types.find((t) => t.label === leaderTypeName);
-      if (matchedType) {
-        setLeaderEventTypeId(matchedType.value);
-        if (eventFormMethodsRef.current) {
-          eventFormMethodsRef.current.setValue('eventTypeId', matchedType.value);
-        }
-      }
-    }
-  };
-
-  useEffect(() => {
-    loadInitialOptions();
-  }, []);
-
-  useEffect(() => {
-    if (currentUser && eventTypes.length > 0) {
-      checkLeaderRole(currentUser, eventTypes);
-    }
-  }, [currentUser, eventTypes]);
+  }, [currentUser]);
 
   const handleSubmit = async (data: z.infer<typeof eventSchema>) => {
+    if (!canOperateEventScheduling(currentUser ?? null)) {
+      router.replace('/events');
+      return;
+    }
     startTransition(async () => {
       try {
         const coverImage = data.coverImage;
+        const privileged = canEditFullEventMetadata(currentUser);
         const eventData = {
           name: data.name,
           description: data.description || undefined,
           location: data.location ?? '',
           eventTypeId: data.eventTypeId,
-          seasonId: data.seasonId || undefined,
+          seasonId: privileged ? data.seasonId || undefined : undefined,
           capacity: data.capacity,
-          formUrl: data.formUrl || undefined,
+          formUrl: privileged ? data.formUrl || undefined : undefined,
           startDate: convertGMT3ToGMT0(data.startDate),
           endDate: convertGMT3ToGMT0(data.endDate),
-          linkedin: data.linkedin || undefined,
+          linkedin: privileged ? data.linkedin || undefined : undefined,
           active: data.active,
-          isRanked: data.isRanked ?? false,
-          prizeInfo: data.prizeInfo || undefined,
-          competitionId: data.competitionId || undefined,
+          isRanked: privileged ? (data.isRanked ?? false) : false,
+          prizeInfo: privileged ? data.prizeInfo || undefined : undefined,
+          competitionId: privileged ? data.competitionId || undefined : undefined,
         };
         await eventsApi.create(eventData, coverImage);
 
@@ -151,7 +169,7 @@ export default function NewEventPage() {
         name: data.name,
       });
       if (response.success && response.data) {
-        loadInitialOptions();
+        void reloadEventTypesList();
         eventFormMethodsRef.current?.setValue?.('eventTypeId', response.data.id);
         setIsModalOpen(false);
       }
@@ -220,7 +238,7 @@ export default function NewEventPage() {
                             required
                             disabled={!!leaderEventTypeId}
                           />
-                          {!leaderEventTypeId && (
+                          {!leaderEventTypeId && showFullEventFields && (
                             <button
                               type="button"
                               onClick={() => setIsModalOpen(true)}
@@ -235,31 +253,39 @@ export default function NewEventPage() {
                           label="Konum"
                           placeholder="YTÜ Davutpaşa Kampüsü"
                         />
-                        <Select
-                          name="seasonId"
-                          label="Sezon"
-                          options={seasons}
-                          placeholder="Sezon Seçiniz (Opsiyonel)"
-                        />
+                        {showFullEventFields && (
+                          <Select
+                            name="seasonId"
+                            label="Sezon"
+                            options={seasons}
+                            placeholder="Sezon Seçiniz (Opsiyonel)"
+                          />
+                        )}
                         <TextField
                           name="capacity"
                           label="Kapasite"
                           type="number"
                           placeholder="500"
                         />
-                        <TextField
-                          name="formUrl"
-                          label="Form URL"
-                          type="url"
-                          placeholder="https://forms.google.com/..."
-                        />
-                        <TextField
-                          name="prizeInfo"
-                          label="Ödül Bilgisi"
-                          placeholder="1.ye laptop, 2.ye tablet..."
-                        />
-                        <div className="flex items-center gap-4 pt-8">
-                          <Checkbox name="isRanked" label="Sıralamalı Etkinlik" />
+                        {showFullEventFields ? (
+                          <>
+                            <TextField
+                              name="formUrl"
+                              label="Form URL"
+                              type="url"
+                              placeholder="https://forms.google.com/..."
+                            />
+                            <TextField
+                              name="prizeInfo"
+                              label="Ödül Bilgisi"
+                              placeholder="1.ye laptop, 2.ye tablet..."
+                            />
+                          </>
+                        ) : null}
+                        <div className="col-span-full flex flex-wrap items-center gap-4 pt-2 sm:pt-8">
+                          {showFullEventFields ? (
+                            <Checkbox name="isRanked" label="Sıralamalı Etkinlik" />
+                          ) : null}
                           <Checkbox name="active" label="Aktif mi?" />
                         </div>
                       </div>
@@ -284,12 +310,14 @@ export default function NewEventPage() {
                     <div className="border-dark-200 border-t pt-5">
                       <h3 className="text-dark-800 mb-3 text-sm font-semibold">Ek Bilgiler</h3>
                       <div className="space-y-4">
-                        <TextField
-                          name="linkedin"
-                          label="LinkedIn URL"
-                          type="url"
-                          placeholder="https://www.linkedin.com/events/..."
-                        />
+                        {showFullEventFields ? (
+                          <TextField
+                            name="linkedin"
+                            label="LinkedIn URL"
+                            type="url"
+                            placeholder="https://www.linkedin.com/events/..."
+                          />
+                        ) : null}
                         <FileUpload name="coverImage" label="Kapak Resmi" accept="image/*" />
                       </div>
                     </div>
@@ -317,38 +345,40 @@ export default function NewEventPage() {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={closeEventTypeModal} title="Yeni Etkinlik Tipi">
-        <Form schema={eventTypeSchema} onSubmit={(data) => handleCreateEventType(data)}>
-          {(methods) => (
-            <>
-              <div className="space-y-4">
-                <TextField name="name" label="Ad" required placeholder="Workshop, Seminer, vb." />
-              </div>
-              <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeEventTypeModal();
-                  }}
-                  className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                >
-                  İptal
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isCreatingEventType}
-                  className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                >
-                  {isCreatingEventType ? 'Kaydediliyor...' : 'Kaydet'}
-                </Button>
-              </div>
-            </>
-          )}
-        </Form>
-      </Modal>
+      {showFullEventFields ? (
+        <Modal isOpen={isModalOpen} onClose={closeEventTypeModal} title="Yeni Etkinlik Tipi">
+          <Form schema={eventTypeSchema} onSubmit={(data) => handleCreateEventType(data)}>
+            {(methods) => (
+              <>
+                <div className="space-y-4">
+                  <TextField name="name" label="Ad" required placeholder="Workshop, Seminer, vb." />
+                </div>
+                <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeEventTypeModal();
+                    }}
+                    className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
+                  >
+                    İptal
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isCreatingEventType}
+                    className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
+                  >
+                    {isCreatingEventType ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </Form>
+        </Modal>
+      ) : null}
     </div>
   );
 }

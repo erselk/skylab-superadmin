@@ -20,7 +20,15 @@ import { eventTypesApi } from '@/lib/api/event-types';
 import { seasonsApi } from '@/lib/api/seasons';
 import type { EventDto } from '@/types/api';
 import { formatGMT0ToLocalInput, convertGMT3ToGMT0 } from '@/lib/utils/date';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import {
+  canEditFullEventMetadata,
+  canOperateEventScheduling,
+  canOperateEventSchedulingOnEvent,
+  eventTypeMatchesLeaderScope,
+  getSkylabLeaderEventScopeType,
+  hasSkylabEventLeaderRole,
+  isSuperAdmin,
+} from '@/lib/utils/permissions';
 import { useAuth } from '@/context/AuthContext';
 
 const eventSchema = z.object({
@@ -54,47 +62,89 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
   const [isRanked, setIsRanked] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
   const [seasons, setSeasons] = useState<{ value: string; label: string }[]>([]);
+  const showFullEventFields = canEditFullEventMetadata(currentUser);
 
   useEffect(() => {
-    if (id) {
-      Promise.all([eventsApi.getById(id), eventTypesApi.getAll(), seasonsApi.getAll()])
-        .then(([eventResponse, eventTypesResponse, seasonsResponse]) => {
-          if (eventResponse.success && eventResponse.data) {
-            setEvent(eventResponse.data);
-            setIsActive(eventResponse.data.active ?? true);
-            setIsRanked(eventResponse.data.ranked ?? false);
-          } else {
-            setError('Etkinlik bulunamadı');
-          }
-          if (eventTypesResponse.success && eventTypesResponse.data) {
-            setEventTypes(eventTypesResponse.data.map((et) => ({ value: et.id, label: et.name })));
-          }
-          if (seasonsResponse.success && seasonsResponse.data) {
+    if (authLoading) return;
+    if (!canOperateEventScheduling(currentUser ?? null)) {
+      router.replace(`/events/${id}`);
+    }
+  }, [authLoading, currentUser, id, router]);
+
+  useEffect(() => {
+    if (authLoading || loading) return;
+    if (!event || error) return;
+    if (!canOperateEventSchedulingOnEvent(currentUser ?? null, event.type?.name)) {
+      router.replace(`/events/${id}`);
+    }
+  }, [authLoading, loading, event, error, currentUser, id, router]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLoading(true);
+
+    const run = async () => {
+      try {
+        const [eventResponse, eventTypesResponse] = await Promise.all([
+          eventsApi.getById(id),
+          eventTypesApi.getAll(),
+        ]);
+        if (cancelled) return;
+
+        if (eventResponse.success && eventResponse.data) {
+          setEvent(eventResponse.data);
+          setIsActive(eventResponse.data.active ?? true);
+          setIsRanked(eventResponse.data.ranked ?? false);
+        } else {
+          setError('Etkinlik bulunamadı');
+        }
+
+        if (eventTypesResponse.success && eventTypesResponse.data) {
+          setEventTypes(eventTypesResponse.data.map((et) => ({ value: et.id, label: et.name })));
+        }
+
+        const privileged = canEditFullEventMetadata(currentUser);
+        if (privileged) {
+          const seasonsResponse = await seasonsApi.getAll();
+          if (!cancelled && seasonsResponse.success && seasonsResponse.data) {
             setSeasons(seasonsResponse.data.map((s) => ({ value: s.id, label: s.name })));
           }
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('Event fetch error:', err);
+        } else if (!cancelled) {
+          setSeasons([]);
+        }
+      } catch (err) {
+        console.error('Event fetch error:', err);
+        if (!cancelled) {
           setError('Etkinlik yüklenirken hata oluştu');
+        }
+      } finally {
+        if (!cancelled) {
           setLoading(false);
-        });
-    }
-  }, [id]);
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, currentUser]);
 
   const handleSubmit = async (data: z.infer<typeof eventSchema>) => {
-    // Permission check
-    if (currentUser) {
-      const leaderType = getLeaderEventType(currentUser);
-      if (leaderType) {
-        // Check if the event type matches the leader's type
-        const selectedType = eventTypes.find((t) => t.value === data.eventTypeId);
-        if (selectedType && selectedType.label !== leaderType) {
-          alert('Bu etkinlik tipini düzenleme yetkiniz yok.');
-          return;
-        }
+    if (!canOperateEventSchedulingOnEvent(currentUser ?? null, event?.type?.name)) {
+      router.replace(`/events/${id}`);
+      return;
+    }
+
+    if (currentUser && hasSkylabEventLeaderRole(currentUser) && !isSuperAdmin(currentUser)) {
+      const scope = getSkylabLeaderEventScopeType(currentUser);
+      const selectedType = eventTypes.find((t) => t.value === data.eventTypeId);
+      if (selectedType && !eventTypeMatchesLeaderScope(selectedType.label, scope)) {
+        alert('Bu etkinlik tipini düzenleme yetkiniz yok.');
+        return;
       }
     }
 
@@ -103,34 +153,36 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         // Note: Backend currently does not support updating cover image via PUT /api/events/{id}
         // So we ignore data.coverImage for now or implement a separate image upload flow if backend supports it later.
 
+        const privileged = canEditFullEventMetadata(currentUser);
         const eventData = {
           name: data.name,
           description: data.description || undefined,
           location: data.location || undefined,
-          // typeId maps to 'type' or 'typeId' in request? Schema has both 'type' (string) and 'typeId' (uuid).
-          // Use typeId for uuid.
           typeId: data.eventTypeId,
-          formUrl: data.formUrl || undefined,
+          formUrl: privileged ? data.formUrl || undefined : event?.formUrl || undefined,
           startDate: convertGMT3ToGMT0(data.startDate),
           endDate: data.endDate ? convertGMT3ToGMT0(data.endDate) : undefined,
-          linkedin: data.linkedin || undefined,
-          active: isActive,
-          ranked: isRanked,
-          prizeInfo: data.prizeInfo || undefined,
-          competitionId: data.competitionId || undefined,
+          linkedin: privileged ? data.linkedin || undefined : event?.linkedin || undefined,
+          active: privileged ? isActive : (event?.active ?? true),
+          ranked: privileged ? isRanked : (event?.ranked ?? false),
+          prizeInfo: privileged ? data.prizeInfo || undefined : event?.prizeInfo || undefined,
+          competitionId: privileged
+            ? data.competitionId || undefined
+            : event?.competition?.id || undefined,
         };
 
         await eventsApi.update(id, eventData);
 
-        // Handle season change
-        const currentSeasonId = event?.season?.id;
-        const newSeasonId = data.seasonId;
+        if (privileged && event) {
+          const currentSeasonId = event.season?.id;
+          const newSeasonId = data.seasonId;
 
-        if (newSeasonId !== currentSeasonId) {
-          if (newSeasonId) {
-            await eventsApi.assignSeason(id, newSeasonId);
-          } else if (currentSeasonId) {
-            await eventsApi.removeSeason(id);
+          if (newSeasonId !== currentSeasonId) {
+            if (newSeasonId) {
+              await eventsApi.assignSeason(id, newSeasonId);
+            } else if (currentSeasonId) {
+              await eventsApi.removeSeason(id);
+            }
           }
         }
 
@@ -147,6 +199,10 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
 
   const handleDelete = async () => {
     if (!event) return;
+    if (!canOperateEventSchedulingOnEvent(currentUser ?? null, event.type?.name)) {
+      setShowDeleteModal(false);
+      return;
+    }
     setIsDeleting(true);
     try {
       await eventsApi.delete(event.id);
@@ -185,7 +241,12 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const isLeader = !!currentUser && !!getLeaderEventType(currentUser);
+  const typeLocked =
+    !!currentUser && hasSkylabEventLeaderRole(currentUser) && !isSuperAdmin(currentUser);
+  const canDeleteThisEvent = canOperateEventSchedulingOnEvent(
+    currentUser ?? null,
+    event.type?.name,
+  );
 
   return (
     <div className="space-y-6">
@@ -193,25 +254,33 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         title="Etkinlik Düzenle"
         description={event.name}
         actions={
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-dark-600 text-xs font-medium">Aktif</span>
-              <Toggle checked={isActive} onChange={setIsActive} />
+          showFullEventFields || canDeleteThisEvent ? (
+            <div className="flex items-center gap-4">
+              {showFullEventFields ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-dark-600 text-xs font-medium">Aktif</span>
+                    <Toggle checked={isActive} onChange={setIsActive} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-dark-600 text-xs font-medium">Sıralamalı</span>
+                    <Toggle checked={isRanked} onChange={setIsRanked} />
+                  </div>
+                </>
+              ) : null}
+              {canDeleteThisEvent ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
+                  aria-label="Etkinliği sil"
+                >
+                  <HiOutlineTrash className="text-danger h-5 w-5" />
+                </Button>
+              ) : null}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-dark-600 text-xs font-medium">Sıralamalı</span>
-              <Toggle checked={isRanked} onChange={setIsRanked} />
-            </div>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => setShowDeleteModal(true)}
-              className="flex items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
-              aria-label="Etkinliği sil"
-            >
-              <HiOutlineTrash className="text-danger h-5 w-5" />
-            </Button>
-          </div>
+          ) : undefined
         }
       />
 
@@ -266,30 +335,36 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                           label="Etkinlik Tipi"
                           options={eventTypes}
                           required
-                          disabled={isLeader}
+                          disabled={typeLocked}
                         />
                         <TextField
                           name="location"
                           label="Konum"
                           placeholder="YTÜ Davutpaşa Kampüsü"
                         />
-                        <Select
-                          name="seasonId"
-                          label="Sezon"
-                          options={seasons}
-                          placeholder="Sezon Seçiniz (Opsiyonel)"
-                        />
-                        <TextField
-                          name="formUrl"
-                          label="Form URL"
-                          type="url"
-                          placeholder="https://forms.google.com/..."
-                        />
-                        <TextField
-                          name="prizeInfo"
-                          label="Ödül Bilgisi"
-                          placeholder="1.ye laptop, 2.ye tablet..."
-                        />
+                        {showFullEventFields ? (
+                          <Select
+                            name="seasonId"
+                            label="Sezon"
+                            options={seasons}
+                            placeholder="Sezon Seçiniz (Opsiyonel)"
+                          />
+                        ) : null}
+                        {showFullEventFields ? (
+                          <TextField
+                            name="formUrl"
+                            label="Form URL"
+                            type="url"
+                            placeholder="https://forms.google.com/..."
+                          />
+                        ) : null}
+                        {showFullEventFields ? (
+                          <TextField
+                            name="prizeInfo"
+                            label="Ödül Bilgisi"
+                            placeholder="1.ye laptop, 2.ye tablet..."
+                          />
+                        ) : null}
                       </div>
                       <div className="mt-4">
                         <Textarea
@@ -312,12 +387,14 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                     <div className="border-dark-200 border-t pt-5">
                       <h3 className="text-dark-800 mb-3 text-sm font-semibold">Ek Bilgiler</h3>
                       <div className="space-y-4">
-                        <TextField
-                          name="linkedin"
-                          label="LinkedIn URL"
-                          type="url"
-                          placeholder="https://www.linkedin.com/events/..."
-                        />
+                        {showFullEventFields ? (
+                          <TextField
+                            name="linkedin"
+                            label="LinkedIn URL"
+                            type="url"
+                            placeholder="https://www.linkedin.com/events/..."
+                          />
+                        ) : null}
                         {event.coverImageUrl && (
                           <div>
                             <label className="text-dark mb-1 block text-sm font-medium">
@@ -357,28 +434,30 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Etkinliği Sil"
-      >
-        <p>
-          <strong>{event.name}</strong> etkinliğini silmek istediğinizden emin misiniz? Bu işlem
-          geri alınamaz.
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Siliniyor...' : 'Sil'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
-            disabled={isDeleting}
-          >
-            İptal
-          </Button>
-        </div>
-      </Modal>
+      {canDeleteThisEvent ? (
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="Etkinliği Sil"
+        >
+          <p>
+            <strong>{event.name}</strong> etkinliğini silmek istediğinizden emin misiniz? Bu işlem
+            geri alınamaz.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Siliniyor...' : 'Sil'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              İptal
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
 import { eventsApi } from '@/lib/api/events';
-import { getLeaderEventType } from '@/lib/utils/permissions';
+import { canManageCompetitorsForEvent } from '@/lib/utils/permissions';
 import type { CompetitorDto, EventDto } from '@/types/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -111,6 +111,15 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
 
   const cancelHref = resolvedEventId ? `/events/${resolvedEventId}` : '/competitors';
 
+  useEffect(() => {
+    if (loading || !competitor) return;
+    const typeName = competitor.event?.type?.name || eventFromApi?.type?.name;
+    if (!canManageCompetitorsForEvent(currentUser, typeName)) {
+      const fallback = competitor.event?.id || queryEventId;
+      router.replace(fallback ? `/events/${fallback}` : '/competitors');
+    }
+  }, [loading, competitor, currentUser, eventFromApi?.type?.name, queryEventId, router]);
+
   const handleSubmit = async (data: z.infer<typeof competitorSchema>) => {
     if (!competitor) return;
 
@@ -120,13 +129,9 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
       return;
     }
 
-    if (currentUser) {
-      const leaderType = getLeaderEventType(currentUser);
-      const typeName = resolvedEventTypeName;
-      if (leaderType && typeName && typeName !== leaderType) {
-        alert('Bu etkinlik için yarışmacı düzenleme yetkiniz yok.');
-        return;
-      }
+    if (!canManageCompetitorsForEvent(currentUser, resolvedEventTypeName)) {
+      router.replace(`/events/${eventId}`);
+      return;
     }
 
     startTransition(async () => {
@@ -150,6 +155,10 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
   };
 
   const handleDelete = async () => {
+    if (!canManageCompetitorsForEvent(currentUser, resolvedEventTypeName)) {
+      router.replace(cancelHref);
+      return;
+    }
     setIsDeleting(true);
     try {
       const response = await competitorsApi.delete(id);
@@ -196,6 +205,8 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
     );
   }
 
+  const canManageThisCompetitor = canManageCompetitorsForEvent(currentUser, resolvedEventTypeName);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -204,15 +215,17 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
           competitor.user ? `${competitor.user.firstName} ${competitor.user.lastName}` : undefined
         }
         actions={
-          <Button
-            type="button"
-            variant="danger"
-            onClick={() => setShowDeleteModal(true)}
-            className="flex cursor-pointer items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
-            aria-label="Yarışmacıyı sil"
-          >
-            <HiOutlineTrash className="text-danger h-5 w-5" />
-          </Button>
+          canManageThisCompetitor ? (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex cursor-pointer items-center justify-center !border-0 !bg-transparent !px-3 !py-3 hover:!bg-transparent"
+              aria-label="Yarışmacıyı sil"
+            >
+              <HiOutlineTrash className="text-danger h-5 w-5" />
+            </Button>
+          ) : undefined
         }
       />
       <div className="mx-auto max-w-2xl">
