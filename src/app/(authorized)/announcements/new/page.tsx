@@ -11,6 +11,7 @@ import { Select } from '@/components/forms/Select';
 import { FileUpload } from '@/components/forms/FileUpload';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { announcementsApi } from '@/lib/api/announcements';
 import { eventTypesApi } from '@/lib/api/event-types';
@@ -139,22 +140,18 @@ export default function NewAnnouncementPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href="/announcements"
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href="/announcements" variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}

@@ -3,8 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import { CreatePageButton } from '@/components/ui/CreatePageButton';
 import { useRouter } from 'next/navigation';
 import type { CompetitorDto } from '@/types/api';
 import { competitorsApi } from '@/lib/api/competitors';
@@ -90,23 +89,7 @@ export default function CompetitorsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Yarışmacılar"
-          actions={
-            <Link href="/competitors/new">
-              <Button>
-                <span className="flex items-center gap-2">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Yeni Yarışmacı
-                </span>
-              </Button>
-            </Link>
-          }
+          actions={<CreatePageButton href="/competitors/new">Yeni Yarışmacı</CreatePageButton>}
         />
 
         {/* Error State */}
@@ -157,21 +140,7 @@ export default function CompetitorsPage() {
               </div>
               <h3 className="text-dark-800 mb-2 text-xl font-semibold">Henüz yarışmacı yok</h3>
               <p className="text-dark-600 mb-6">Sisteme ilk yarışmacıyı ekleyerek başlayın</p>
-              <Link href="/competitors/new">
-                <Button>
-                  <span className="flex items-center gap-2">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    İlk Yarışmacıyı Ekle
-                  </span>
-                </Button>
-              </Link>
+              <CreatePageButton href="/competitors/new">İlk Yarışmacıyı Ekle</CreatePageButton>
             </div>
           </div>
         ) : (

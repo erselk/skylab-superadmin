@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
+import { ModalPrimaryActions } from '@/components/ui/modal-actions';
 import { Modal } from '@/components/ui/Modal';
 import { usersApi } from '@/lib/api/users';
 import type { UpdateUserRequest, UserDto } from '@/types/api';
@@ -293,23 +295,24 @@ export default function UserDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="border-dark-200 flex items-center justify-between gap-3 border-t pt-5">
-              <Button
-                href="/users"
-                variant="secondary"
-                className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-              >
-                İptal
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-              >
-                {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-              </Button>
-            </div>
+            <FormActions
+              className="!mt-0"
+              cancel={
+                <Button href="/users" variant="outlineDanger">
+                  İptal
+                </Button>
+              }
+              submit={
+                <Button
+                  type="button"
+                  variant="outlineBrand"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>
@@ -347,14 +350,12 @@ export default function UserDetailPage() {
               onChange={(e) => setPromoteData((d) => ({ ...d, initialPassword: e.target.value }))}
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => setIsPromoteModalOpen(false)}>
-              İptal
-            </Button>
-            <Button onClick={handlePromote} disabled={isPromoting}>
-              {isPromoting ? 'İşleniyor...' : 'Terfi Ettir'}
-            </Button>
-          </div>
+          <ModalPrimaryActions
+            onCancel={() => setIsPromoteModalOpen(false)}
+            onConfirm={handlePromote}
+            confirmLabel="Terfi Ettir"
+            isPending={isPromoting}
+          />
         </div>
       </Modal>
     </div>

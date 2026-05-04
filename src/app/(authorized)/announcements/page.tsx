@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/tables/DataTable';
-import { Button } from '@/components/ui/Button';
+import { CreatePageButton } from '@/components/ui/CreatePageButton';
 import { Modal } from '@/components/ui/Modal';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AnnouncementDto } from '@/types/api';
 import { announcementsApi } from '@/lib/api/announcements';
@@ -77,23 +76,7 @@ export default function AnnouncementsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Duyurular"
-          actions={
-            <Link href="/announcements/new">
-              <Button>
-                <span className="flex items-center gap-2">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Yeni Duyuru
-                </span>
-              </Button>
-            </Link>
-          }
+          actions={<CreatePageButton href="/announcements/new">Yeni Duyuru</CreatePageButton>}
         />
         {announcements.length === 0 ? (
           <div className="bg-light border-dark-200 rounded-lg border p-6 text-center">

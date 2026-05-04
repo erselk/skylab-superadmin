@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
 import { TextField } from '@/components/forms/TextField';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
+import { ModalDangerActions } from '@/components/ui/modal-actions';
 import { z } from 'zod';
 import { eventTypesApi } from '@/lib/api/event-types';
 import type { EventTypeDto, UserDto } from '@/types/api';
@@ -196,14 +198,18 @@ export default function EditEventTypePage() {
                 <div className="space-y-4">
                   <TextField name="name" label="Ad" required placeholder="Workshop, Seminer, vb." />
                 </div>
-                <div className="mt-6 flex gap-4">
-                  <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Güncelleniyor...' : 'Güncelle'}
-                  </Button>
-                  <Button href="/event-types" variant="secondary">
-                    İptal
-                  </Button>
-                </div>
+                <FormActions
+                  cancel={
+                    <Button href="/event-types" variant="outlineDanger">
+                      İptal
+                    </Button>
+                  }
+                  submit={
+                    <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                      {isPending ? 'Güncelleniyor...' : 'Güncelle'}
+                    </Button>
+                  }
+                />
               </>
             );
           }}
@@ -223,18 +229,11 @@ export default function EditEventTypePage() {
           <strong>{eventType.name}</strong> etkinlik tipini silmek istediğinizden emin misiniz? Bu
           işlem geri alınamaz.
         </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Siliniyor...' : 'Sil'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
-            disabled={isDeleting}
-          >
-            İptal
-          </Button>
-        </div>
+        <ModalDangerActions
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          isPending={isDeleting}
+        />
       </Modal>
     </div>
   );

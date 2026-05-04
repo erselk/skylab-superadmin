@@ -8,6 +8,7 @@ import { TextField } from '@/components/forms/TextField';
 import { Textarea } from '@/components/forms/Textarea';
 import { Select } from '@/components/forms/Select';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { sessionsApi } from '@/lib/api/sessions';
 import { eventDaysApi } from '@/lib/api/eventDays';
@@ -355,17 +356,25 @@ function NewSessionPageContent() {
                       <div className="mt-4">
                         <Textarea name="description" label="Açıklama" rows={4} />
                       </div>
-                      <div className="border-dark-200 mt-6 flex items-center justify-end gap-3 border-t pt-5">
-                        <Button
-                          href={eventId ? `/events/${eventId}` : '/sessions'}
-                          variant="secondary"
-                        >
-                          İptal
-                        </Button>
-                        <Button type="submit" disabled={isPending || eventDays.length === 0}>
-                          {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                        </Button>
-                      </div>
+                      <FormActions
+                        cancel={
+                          <Button
+                            href={eventId ? `/events/${eventId}` : '/sessions'}
+                            variant="outlineDanger"
+                          >
+                            İptal
+                          </Button>
+                        }
+                        submit={
+                          <Button
+                            type="submit"
+                            variant="outlineBrand"
+                            disabled={isPending || eventDays.length === 0}
+                          >
+                            {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                          </Button>
+                        }
+                      />
                     </>
                   )}
                 </Form>

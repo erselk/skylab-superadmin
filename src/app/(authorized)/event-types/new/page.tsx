@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Form } from '@/components/forms/Form';
 import { TextField } from '@/components/forms/TextField';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { eventTypesApi } from '@/lib/api/event-types';
 
@@ -69,22 +70,18 @@ export default function NewEventTypePage() {
                     </div>
                   </div>
 
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href="/event-types"
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href="/event-types" variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}

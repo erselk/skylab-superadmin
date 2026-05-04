@@ -9,6 +9,7 @@ import { TextField } from '@/components/forms/TextField';
 import { Select } from '@/components/forms/Select';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
@@ -219,24 +220,27 @@ function NewCompetitorPageContent() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href={lockedEventId ? `/events/${lockedEventId}` : '/competitors'}
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={
-                        isPending || !!lockedEventError || (!!lockedEventId && lockedEventLoading)
-                      }
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button
+                        href={lockedEventId ? `/events/${lockedEventId}` : '/competitors'}
+                        variant="outlineDanger"
+                      >
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button
+                        type="submit"
+                        variant="outlineBrand"
+                        disabled={
+                          isPending || !!lockedEventError || (!!lockedEventId && lockedEventLoading)
+                        }
+                      >
+                        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}

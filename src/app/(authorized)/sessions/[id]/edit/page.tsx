@@ -10,6 +10,7 @@ import { Select } from '@/components/forms/Select';
 import { HiOutlineTrash } from 'react-icons/hi2';
 
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { sessionsApi } from '@/lib/api/sessions';
 import { useAuth } from '@/context/AuthContext';
@@ -360,14 +361,18 @@ function EditSessionPageContent() {
                 <div className="mt-4">
                   <Textarea name="description" label="Açıklama" rows={4} />
                 </div>
-                <div className="border-dark-200 mt-6 flex flex-wrap items-center justify-end gap-3 border-t pt-5">
-                  <Button href={`/events/${eventId}`} variant="secondary">
-                    İptal
-                  </Button>
-                  <Button type="submit" disabled={isPending}>
-                    {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                  </Button>
-                </div>
+                <FormActions
+                  cancel={
+                    <Button href={`/events/${eventId}`} variant="outlineDanger">
+                      İptal
+                    </Button>
+                  }
+                  submit={
+                    <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                    </Button>
+                  }
+                />
               </>
             )}
           </Form>

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useTransition, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ModalDangerActions } from '@/components/ui/modal-actions';
 import { eventsApi } from '@/lib/api/events';
 import { sessionsApi } from '@/lib/api/sessions';
 import type { EventDto, SessionDto } from '@/types/api';
@@ -153,14 +154,14 @@ function DeleteSessionPageContent() {
             <strong>{session.title}</strong> oturumunu silmek istediğinize emin misiniz? Bu işlem
             geri alınamaz.
           </p>
-          <div className="border-dark-200 mt-6 flex flex-wrap justify-end gap-2 border-t pt-5">
-            <Button href={backHref} variant="secondary" disabled={isPending}>
-              Vazgeç
-            </Button>
-            <Button type="button" variant="danger" onClick={handleDelete} disabled={isPending}>
-              {isPending ? 'Siliniyor…' : 'Sil'}
-            </Button>
-          </div>
+          <ModalDangerActions
+            className="border-dark-200 mt-6 border-t pt-5"
+            cancelLabel="Vazgeç"
+            onCancel={() => router.push(backHref)}
+            onConfirm={handleDelete}
+            isPending={isPending}
+            pendingLabel="Siliniyor…"
+          />
         </div>
       </div>
     </div>

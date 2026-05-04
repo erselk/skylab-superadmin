@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import { CreatePageButton } from '@/components/ui/CreatePageButton';
 import type { EventDto, UserDto } from '@/types/api';
 import { eventsApi } from '@/lib/api/events';
 import { eventTypesApi } from '@/lib/api/event-types';
@@ -58,21 +57,7 @@ export default function EventsPage() {
         title="Etkinlikler"
         actions={
           allowNewEvent ? (
-            <Link href="/events/new">
-              <Button>
-                <span className="flex items-center gap-2">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Yeni Etkinlik
-                </span>
-              </Button>
-            </Link>
+            <CreatePageButton href="/events/new">Yeni Etkinlik</CreatePageButton>
           ) : undefined
         }
       />

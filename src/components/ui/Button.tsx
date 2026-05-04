@@ -7,7 +7,7 @@ interface ButtonProps {
   children: ReactNode;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
   href?: string;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outlineBrand' | 'outlineDanger';
   type?: 'button' | 'submit';
   disabled?: boolean;
   className?: string;
@@ -34,6 +34,10 @@ export function Button({
     primary: 'bg-brand text-light hover:bg-brand-600 border border-brand',
     secondary: 'bg-light-300 text-dark hover:bg-light-400 border border-dark-200',
     danger: 'bg-red-500 text-light hover:bg-red-600',
+    outlineBrand:
+      'border border-brand bg-transparent text-brand hover:bg-brand hover:text-white cursor-pointer',
+    outlineDanger:
+      'border border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white cursor-pointer',
   };
 
   const combinedClassName = className

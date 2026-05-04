@@ -11,6 +11,7 @@ import { DatePicker } from '@/components/forms/DatePicker';
 import { Select } from '@/components/forms/Select';
 import { FileUpload } from '@/components/forms/FileUpload';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Modal } from '@/components/ui/Modal';
 import { z } from 'zod';
@@ -322,22 +323,18 @@ export default function NewEventPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href="/events"
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href="/events" variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}
@@ -353,27 +350,26 @@ export default function NewEventPage() {
                 <div className="space-y-4">
                   <TextField name="name" label="Ad" required placeholder="Workshop, Seminer, vb." />
                 </div>
-                <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      closeEventTypeModal();
-                    }}
-                    className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                  >
-                    İptal
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isCreatingEventType}
-                    className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                  >
-                    {isCreatingEventType ? 'Kaydediliyor...' : 'Kaydet'}
-                  </Button>
-                </div>
+                <FormActions
+                  cancel={
+                    <Button
+                      type="button"
+                      variant="outlineDanger"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeEventTypeModal();
+                      }}
+                    >
+                      İptal
+                    </Button>
+                  }
+                  submit={
+                    <Button type="submit" variant="outlineBrand" disabled={isCreatingEventType}>
+                      {isCreatingEventType ? 'Kaydediliyor...' : 'Kaydet'}
+                    </Button>
+                  }
+                />
               </>
             )}
           </Form>

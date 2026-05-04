@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { CreatePageButton } from '@/components/ui/CreatePageButton';
 import type { SessionDto } from '@/types/api';
 import { sessionsApi } from '@/lib/api/sessions';
 
@@ -34,7 +35,10 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Oturumlar" actions={<Button href="/sessions/new">Yeni Oturum</Button>} />
+      <PageHeader
+        title="Oturumlar"
+        actions={<CreatePageButton href="/sessions/new">Yeni Oturum</CreatePageButton>}
+      />
 
       {loading ? (
         <div className="bg-light border-dark-200 rounded-lg border p-6 text-center text-sm">

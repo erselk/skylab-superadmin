@@ -6,6 +6,7 @@ import { HiOutlinePencilSquare, HiOutlinePlus } from 'react-icons/hi2';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ModalDangerActions } from '@/components/ui/modal-actions';
 import { Modal } from '@/components/ui/Modal';
 import { eventsApi } from '@/lib/api/events';
 import { eventDaysApi } from '@/lib/api/eventDays';
@@ -540,18 +541,13 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             <strong>{event.name}</strong> etkinliğini silmek istediğinize emin misiniz? Bu işlem
             geri alınamaz.
           </p>
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setEventDeleteOpen(false)}
-              disabled={eventDeleting}
-            >
-              Vazgeç
-            </Button>
-            <Button variant="danger" onClick={handleDeleteEvent} disabled={eventDeleting}>
-              {eventDeleting ? 'Siliniyor…' : 'Sil'}
-            </Button>
-          </div>
+          <ModalDangerActions
+            cancelLabel="Vazgeç"
+            onCancel={() => setEventDeleteOpen(false)}
+            onConfirm={handleDeleteEvent}
+            isPending={eventDeleting}
+            pendingLabel="Siliniyor…"
+          />
         </Modal>
       ) : null}
     </div>

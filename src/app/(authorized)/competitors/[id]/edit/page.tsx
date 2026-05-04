@@ -9,6 +9,8 @@ import { TextField } from '@/components/forms/TextField';
 import { Select } from '@/components/forms/Select';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
+import { ModalDangerActions } from '@/components/ui/modal-actions';
 import { z } from 'zod';
 import { competitorsApi } from '@/lib/api/competitors';
 import { usersApi } from '@/lib/api/users';
@@ -282,22 +284,22 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
                       <Checkbox name="winner" label="Kazanan" />
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href={cancelHref}
-                      variant="secondary"
-                      className="cursor-pointer border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending || !resolvedEventId}
-                      className="!text-brand hover:!bg-brand border-brand cursor-pointer !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Güncelleniyor...' : 'Güncelle'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href={cancelHref} variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button
+                        type="submit"
+                        variant="outlineBrand"
+                        disabled={isPending || !resolvedEventId}
+                      >
+                        {isPending ? 'Güncelleniyor...' : 'Güncelle'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}
@@ -310,18 +312,11 @@ function EditCompetitorPageContent({ params }: { params: Promise<{ id: string }>
         title="Yarışmacıyı Sil"
       >
         <p>Bu yarışmacıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Siliniyor...' : 'Sil'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
-            disabled={isDeleting}
-          >
-            İptal
-          </Button>
-        </div>
+        <ModalDangerActions
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          isPending={isDeleting}
+        />
       </Modal>
     </div>
   );

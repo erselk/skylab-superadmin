@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/tables/DataTable';
-import { Button } from '@/components/ui/Button';
+import { CreatePageButton } from '@/components/ui/CreatePageButton';
 import { Modal } from '@/components/ui/Modal';
-import Link from 'next/link';
 import { eventTypesApi } from '@/lib/api/event-types';
 import type { EventTypeDto } from '@/types/api';
 
@@ -53,23 +52,7 @@ export default function EventTypesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Etkinlik Tipleri"
-        actions={
-          <Link href="/event-types/new">
-            <Button>
-              <span className="flex items-center gap-2">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Yeni Etkinlik Tipi
-              </span>
-            </Button>
-          </Link>
-        }
+        actions={<CreatePageButton href="/event-types/new">Yeni Etkinlik Tipi</CreatePageButton>}
       />
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">

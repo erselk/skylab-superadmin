@@ -9,6 +9,7 @@ import { TextField } from '@/components/forms/TextField';
 import { DatePicker } from '@/components/forms/DatePicker';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
 import { z } from 'zod';
 import { seasonsApi } from '@/lib/api/seasons';
 import { convertGMT3ToGMT0, getCurrentDateTimeGMT3 } from '@/lib/utils/date';
@@ -84,22 +85,18 @@ export default function NewSeasonPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href="/seasons"
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href="/seasons" variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}

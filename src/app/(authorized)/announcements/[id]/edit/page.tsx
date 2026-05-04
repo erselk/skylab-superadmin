@@ -10,6 +10,8 @@ import { Textarea } from '@/components/forms/Textarea';
 import { Select } from '@/components/forms/Select';
 import { FileUpload } from '@/components/forms/FileUpload';
 import { Button } from '@/components/ui/Button';
+import { FormActions } from '@/components/ui/FormActions';
+import { ModalDangerActions } from '@/components/ui/modal-actions';
 import { Toggle } from '@/components/ui/Toggle';
 import { z } from 'zod';
 import { announcementsApi } from '@/lib/api/announcements';
@@ -214,22 +216,18 @@ export default function EditAnnouncementPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="border-dark-200 mt-6 flex items-center justify-between gap-3 border-t pt-5">
-                    <Button
-                      href="/announcements"
-                      variant="secondary"
-                      className="border-red-500 bg-transparent text-red-500 hover:bg-red-500 hover:text-white"
-                    >
-                      İptal
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isPending}
-                      className="!text-brand hover:!bg-brand border-brand !bg-transparent hover:!text-white"
-                    >
-                      {isPending ? 'Güncelleniyor...' : 'Güncelle'}
-                    </Button>
-                  </div>
+                  <FormActions
+                    cancel={
+                      <Button href="/announcements" variant="outlineDanger">
+                        İptal
+                      </Button>
+                    }
+                    submit={
+                      <Button type="submit" variant="outlineBrand" disabled={isPending}>
+                        {isPending ? 'Güncelleniyor...' : 'Güncelle'}
+                      </Button>
+                    }
+                  />
                 </>
               );
             }}
@@ -245,18 +243,11 @@ export default function EditAnnouncementPage() {
           <strong>{announcement.title}</strong> duyurusunu silmek istediğinizden emin misiniz? Bu
           işlem geri alınamaz.
         </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? 'Siliniyor...' : 'Sil'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
-            disabled={isDeleting}
-          >
-            İptal
-          </Button>
-        </div>
+        <ModalDangerActions
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          isPending={isDeleting}
+        />
       </Modal>
     </div>
   );
