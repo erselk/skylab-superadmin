@@ -56,7 +56,7 @@ function fireVictoryConfetti() {
 export function GameVictoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [payload, setPayload] = useState<VictoryCertificatePayload | null>(null);
-  const certificateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const certificateTimerRef = useRef<number | null>(null);
 
   useEffect(
     () => () => {

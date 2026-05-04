@@ -5,7 +5,6 @@ import type {
   CreateCompetitorRequest,
   UpdateCompetitorRequest,
   Result,
-  DataResultListLeaderboardDto,
 } from '@/types/api';
 
 export const competitorsApi = {
@@ -44,18 +43,6 @@ export const competitorsApi = {
     _params?: { includeUser?: boolean; includeEvent?: boolean },
   ) {
     throw new Error('getByEventId endpointi API sozlesmesinde tanimli degil');
-  },
-
-  async getLeaderboard(eventTypeName: string) {
-    return apiClient.get<DataResultListLeaderboardDto>(
-      `/api/competitors/leaderboard/type/${encodeURIComponent(eventTypeName)}`,
-    );
-  },
-
-  async getSeasonLeaderboard(seasonId: string, eventTypeName: string) {
-    return apiClient.get<DataResultListLeaderboardDto>(
-      `/api/competitors/leaderboard/season/${seasonId}/type/${encodeURIComponent(eventTypeName)}`,
-    );
   },
 
   async getEventWinner(eventId: string) {
