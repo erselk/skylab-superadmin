@@ -2,9 +2,11 @@
 
 import { createContext, useContext } from 'react';
 
-type MobileSidebarContextValue = {
+export type MobileSidebarContextValue = {
   open: () => void;
   close: () => void;
+  /** Mobil yan menü şu anda görünür mü */
+  isOpen: boolean;
 };
 
 export const MobileSidebarContext = createContext<MobileSidebarContextValue | null>(null);
@@ -12,4 +14,3 @@ export const MobileSidebarContext = createContext<MobileSidebarContextValue | nu
 export function useMobileSidebar() {
   return useContext(MobileSidebarContext);
 }
-

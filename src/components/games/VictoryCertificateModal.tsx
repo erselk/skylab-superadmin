@@ -5,6 +5,7 @@ import { Great_Vibes, Playfair_Display } from 'next/font/google';
 import { HiOutlineXMark } from 'react-icons/hi2';
 
 import { Button } from '@/components/ui/Button';
+import { useBodyScrollLock } from '@/lib/ui/use-body-scroll-lock';
 import { ErselsGameAreaMark } from '@/components/games/ErselsGameAreaMark';
 import { CERTIFICATE_LAYOUT_PX } from '@/components/games/victory-certificate-layout';
 import { downloadCertificateDomAsPdf } from '@/components/games/victory-certificate-to-pdf';
@@ -72,9 +73,12 @@ export function VictoryCertificateModal({
   onClose,
 }: Props) {
   const certRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const pdfBusyRef = useRef(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  useBodyScrollLock(true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -83,6 +87,13 @@ export function VictoryCertificateModal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      closeBtnRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, []);
 
   const handleDownloadPdf = useCallback(async () => {
     if (typeof window === 'undefined' || pdfBusyRef.current) return;
@@ -121,16 +132,17 @@ export function VictoryCertificateModal({
       role="dialog"
       aria-modal
       aria-labelledby="cert-title"
+      aria-describedby="cert-modal-desc"
     >
-      <button
-        type="button"
-        className="absolute inset-0 z-[1] cursor-pointer"
-        aria-label="Kapat"
-        onClick={onClose}
-      />
+      <p id="cert-modal-desc" className="sr-only">
+        Başarı sertifikası önizlemesi. PDF indirebilir veya Escape ile kapatabilirsiniz.
+      </p>
+
+      <div className="absolute inset-0 z-[1] cursor-pointer" aria-hidden onClick={onClose} />
 
       <div className="relative z-[2] w-full max-w-[min(100%,1024px)] overflow-visible">
         <button
+          ref={closeBtnRef}
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -273,7 +285,9 @@ export function VictoryCertificateModal({
               {pdfLoading ? 'Hazırlanıyor…' : 'PDF indir'}
             </Button>
             {pdfError ? (
-              <p className="max-w-md px-2 text-center text-sm text-[#dc2626]">{pdfError}</p>
+              <p role="alert" className="max-w-md px-2 text-center text-sm text-[#dc2626]">
+                {pdfError}
+              </p>
             ) : null}
           </div>
         </div>

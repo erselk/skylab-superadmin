@@ -25,6 +25,7 @@ export function AuthenticatedChrome({
       value={{
         open: () => setIsMobileSidebarOpen(true),
         close: () => setIsMobileSidebarOpen(false),
+        isOpen: isMobileSidebarOpen,
       }}
     >
       <div className="bg-light flex min-h-dvh min-h-screen">

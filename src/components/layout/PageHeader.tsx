@@ -24,12 +24,14 @@ export function PageHeader({ title, description, actions, className }: PageHeade
   return (
     <div className={combinedClassName}>
       <div className="flex items-start gap-3 sm:items-center">
-        {sidebar?.open ? (
+        {sidebar?.open && sidebar.close ? (
           <button
             type="button"
-            onClick={sidebar.open}
+            onClick={() => (sidebar.isOpen ? sidebar.close() : sidebar.open())}
+            aria-expanded={sidebar.isOpen}
+            aria-controls="sidebar-mobile-panel"
             className="bg-light text-dark hover:bg-light-100 focus:ring-brand focus:ring-offset-light inline-flex h-10 w-10 cursor-pointer items-center justify-center transition focus:ring-2 focus:ring-offset-2 focus:outline-none lg:hidden"
-            aria-label="Menüyü aç"
+            aria-label={sidebar.isOpen ? 'Menüyü kapat' : 'Menüyü aç'}
           >
             <HiOutlineBars3 className="h-5 w-5" />
           </button>

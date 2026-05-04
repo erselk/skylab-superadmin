@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   HiOutlineCalendar,
   HiOutlineCalendarDays,
@@ -16,6 +17,7 @@ import {
   HiOutlineArrowRightOnRectangle,
 } from 'react-icons/hi2';
 import { useAuth } from '@/context/AuthContext';
+import { performClientLogout } from '@/lib/auth/client-logout';
 
 import type { SidebarNavLink } from '@/lib/navigation/sidebar-nav';
 import type { UserDto } from '@/types/api';
@@ -32,6 +34,14 @@ const NAV_ICON_BY_HREF: Record<string, IconType> = {
   '/waiting-room': HiOutlinePuzzlePiece,
 };
 
+function navLinkClassNames(showLabels: boolean, isActive: boolean): string {
+  return [
+    'flex cursor-pointer items-center rounded-lg text-sm font-medium transition-colors',
+    showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
+    isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
+  ].join(' ');
+}
+
 type SidebarProps = Readonly<{
   navLinks: readonly SidebarNavLink[];
   prefetchedUser: UserDto;
@@ -47,6 +57,7 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const mobileAsideRef = useRef<HTMLElement | null>(null);
   const [isDesktopExpanded, setIsDesktopExpanded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const effectiveUser = user ?? prefetchedUser;
@@ -55,19 +66,27 @@ export function Sidebar({
     if (!isMobileOpen) setIsUserMenuOpen(false);
   }, [isMobileOpen]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('auth_user');
-        window.location.href = '/login';
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      window.location.href = '/login';
-    }
+  useEffect(() => {
+    if (!isMobileOpen || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onMobileClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobileOpen, onMobileClose]);
+
+  useEffect(() => {
+    if (!isMobileOpen || typeof window === 'undefined') return;
+    const aside = mobileAsideRef.current;
+    if (!aside) return;
+    const id = window.requestAnimationFrame(() => {
+      aside.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [isMobileOpen]);
+
+  const handleLogout = () => {
+    void performClientLogout();
   };
 
   const handleNavigate = () => {
@@ -106,6 +125,11 @@ export function Sidebar({
           type="button"
           onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
           aria-expanded={isUserMenuOpen}
+          aria-label={
+            effectiveUser.firstName && effectiveUser.lastName
+              ? `${effectiveUser.firstName} ${effectiveUser.lastName}, hesap menüsü`
+              : `${effectiveUser.username ?? 'Kullanıcı'}, hesap menüsü`
+          }
           className={`group hover:bg-dark-800 flex w-full cursor-pointer items-center gap-3 p-2 transition-colors ${
             isUserMenuOpen ? 'rounded-none' : 'rounded-lg'
           } ${showDetails ? '' : 'justify-center'}`}
@@ -113,7 +137,8 @@ export function Sidebar({
           {effectiveUser.profilePictureUrl ? (
             <img
               src={effectiveUser.profilePictureUrl}
-              alt={`${effectiveUser.firstName} ${effectiveUser.lastName}`}
+              alt=""
+              loading="lazy"
               className="group-hover:ring-dark-600 h-10 w-10 flex-shrink-0 rounded-full object-cover ring-2 ring-transparent transition-all"
             />
           ) : (
@@ -144,43 +169,51 @@ export function Sidebar({
         }`}
       >
         {showLabels ? (
-          <div className="flex h-14 w-full min-w-0 flex-1 items-center justify-start overflow-hidden pr-1">
-            <img
+          <div className="relative flex h-14 w-full min-w-0 flex-1 items-center justify-start overflow-hidden pr-1">
+            <Image
               src="/logoyatay.png"
               alt="Skylab Admin"
-              className="h-full max-h-14 w-full object-contain object-left"
+              fill
+              sizes="min(100vw, 256px)"
+              className="object-contain object-left"
+              priority={false}
+              unoptimized
             />
           </div>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden p-1">
-            <img
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden p-1">
+            <Image
               src="/logo.png"
               alt="Skylab Admin"
-              className="h-full w-full object-contain object-center"
+              fill
+              sizes="48px"
+              className="object-contain object-center"
+              priority={false}
+              unoptimized
             />
           </div>
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-4">
+      <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Ana menü">
         <ul className="space-y-2">
           {navLinks.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}/`));
 
-            const linkClasses = [
-              'flex cursor-pointer items-center rounded-lg text-sm font-medium transition-colors',
-              showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
-              isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
-            ].join(' ');
-
             const Icon = NAV_ICON_BY_HREF[item.href] ?? HiOutlineSquares2X2;
 
             return (
               <li key={item.href}>
-                <Link href={item.href} className={linkClasses} onClick={handleNavigate}>
-                  <Icon className="h-5 w-5 flex-shrink-0" />
+                <Link
+                  href={item.href}
+                  className={navLinkClassNames(showLabels, isActive)}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-label={showLabels ? undefined : item.label}
+                  onClick={handleNavigate}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" aria-hidden={showLabels} />
                   {showLabels && <span className="whitespace-nowrap">{item.label}</span>}
                 </Link>
               </li>
@@ -213,15 +246,21 @@ export function Sidebar({
           isMobileOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
-        <div
-          className="bg-dark/60 absolute inset-0 cursor-pointer"
-          onClick={onMobileClose}
-          role="presentation"
+        <button
+          type="button"
+          className="bg-dark/60 absolute inset-0 cursor-pointer border-0 p-0"
+          aria-label="Menüyü kapat"
+          onClick={() => onMobileClose?.()}
         />
       </div>
 
       <aside
-        className={`bg-dark text-light fixed inset-y-0 left-0 z-50 flex h-full w-64 transform flex-col shadow-lg transition-transform duration-300 lg:hidden ${
+        id="sidebar-mobile-panel"
+        ref={mobileAsideRef}
+        tabIndex={-1}
+        aria-hidden={!isMobileOpen}
+        inert={!isMobileOpen}
+        className={`bg-dark text-light focus-visible:ring-brand focus-visible:ring-offset-dark fixed inset-y-0 left-0 z-50 flex h-full w-64 transform flex-col shadow-lg transition-transform duration-300 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none lg:hidden ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
