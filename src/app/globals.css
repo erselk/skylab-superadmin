@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #edecec;
@@ -30,40 +30,68 @@ body {
 
 /* Başlıkları yeşil yap */
 @layer base {
-  h1 { color: #27a68e; }
-  h2 { color: #27a68e; }
-  select, option { color: #1a1a1a; }
-  input, textarea, select { color: #1a1a1a; }
-  ::placeholder { color: #666666; opacity: 0.6; }
-  input[type="date"], input[type="time"], input[type="datetime-local"] { color: #1a1a1a; }
-  input[type="date"]::-webkit-datetime-edit,
-  input[type="time"]::-webkit-datetime-edit,
-  input[type="datetime-local"]::-webkit-datetime-edit { color: #1a1a1a; }
-  input[type="date"]::-webkit-datetime-edit-fields-wrapper,
-  input[type="time"]::-webkit-datetime-edit-fields-wrapper,
-  input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper { color: #1a1a1a; }
-  input[type="date"]::-webkit-datetime-edit-text,
-  input[type="time"]::-webkit-datetime-edit-text,
-  input[type="datetime-local"]::-webkit-datetime-edit-text { color: #1a1a1a; opacity: 0.7; }
-  input[type="date"]::-webkit-datetime-edit-month-field,
-  input[type="date"]::-webkit-datetime-edit-day-field,
-  input[type="date"]::-webkit-datetime-edit-year-field,
-  input[type="time"]::-webkit-datetime-edit-hour-field,
-  input[type="time"]::-webkit-datetime-edit-minute-field,
-  input[type="datetime-local"]::-webkit-datetime-edit-month-field,
-  input[type="datetime-local"]::-webkit-datetime-edit-day-field,
-  input[type="datetime-local"]::-webkit-datetime-edit-year-field,
-  input[type="datetime-local"]::-webkit-datetime-edit-hour-field,
-  input[type="datetime-local"]::-webkit-datetime-edit-minute-field { color: #1a1a1a; }
-  input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator,
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator { 
-    filter: brightness(0) saturate(100%) invert(10%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(0.1);
+  h1 {
+    color: #27a68e;
+  }
+  h2 {
+    color: #27a68e;
+  }
+  select,
+  option {
+    color: #1a1a1a;
+  }
+  input,
+  textarea,
+  select {
+    color: #1a1a1a;
+  }
+  ::placeholder {
+    color: #666666;
+    opacity: 0.6;
+  }
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    color: #1a1a1a;
+  }
+  input[type='date']::-webkit-datetime-edit,
+  input[type='time']::-webkit-datetime-edit,
+  input[type='datetime-local']::-webkit-datetime-edit {
+    color: #1a1a1a;
+  }
+  input[type='date']::-webkit-datetime-edit-fields-wrapper,
+  input[type='time']::-webkit-datetime-edit-fields-wrapper,
+  input[type='datetime-local']::-webkit-datetime-edit-fields-wrapper {
+    color: #1a1a1a;
+  }
+  input[type='date']::-webkit-datetime-edit-text,
+  input[type='time']::-webkit-datetime-edit-text,
+  input[type='datetime-local']::-webkit-datetime-edit-text {
+    color: #1a1a1a;
+    opacity: 0.7;
+  }
+  input[type='date']::-webkit-datetime-edit-month-field,
+  input[type='date']::-webkit-datetime-edit-day-field,
+  input[type='date']::-webkit-datetime-edit-year-field,
+  input[type='time']::-webkit-datetime-edit-hour-field,
+  input[type='time']::-webkit-datetime-edit-minute-field,
+  input[type='datetime-local']::-webkit-datetime-edit-month-field,
+  input[type='datetime-local']::-webkit-datetime-edit-day-field,
+  input[type='datetime-local']::-webkit-datetime-edit-year-field,
+  input[type='datetime-local']::-webkit-datetime-edit-hour-field,
+  input[type='datetime-local']::-webkit-datetime-edit-minute-field {
+    color: #1a1a1a;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: brightness(0) saturate(100%) invert(10%) sepia(0%) saturate(0%) hue-rotate(0deg)
+      brightness(0.1);
     cursor: pointer;
   }
-  input[type="date"]::-webkit-inner-spin-button,
-  input[type="time"]::-webkit-inner-spin-button,
-  input[type="datetime-local"]::-webkit-inner-spin-button { 
+  input[type='date']::-webkit-inner-spin-button,
+  input[type='time']::-webkit-inner-spin-button,
+  input[type='datetime-local']::-webkit-inner-spin-button {
     opacity: 1;
   }
 }
@@ -108,5 +136,27 @@ body {
 
   .scrollbar-on-dark {
     --scrollbar-thumb: var(--scrollbar-thumb-on-dark);
+  }
+
+  /* Tıklanabilir kontrollerde el imleci (preflight / tarayıcı varsayılanı bazen default bırakır) */
+  button:not(:disabled):not([disabled]),
+  input[type='button']:not(:disabled):not([disabled]),
+  input[type='submit']:not(:disabled):not([disabled]),
+  input[type='reset']:not(:disabled):not([disabled]),
+  input[type='file']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  button[disabled] {
+    cursor: not-allowed;
+  }
+  a[href] {
+    cursor: pointer;
+  }
+  summary {
+    cursor: pointer;
+  }
+  select:not(:disabled) {
+    cursor: pointer;
   }
 }

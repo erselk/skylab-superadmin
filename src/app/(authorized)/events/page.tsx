@@ -56,7 +56,6 @@ export default function EventsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Etkinlikler"
-        description="Tüm etkinlikleri görüntüleyin ve yönetin"
         actions={
           allowNewEvent ? (
             <Link href="/events/new">

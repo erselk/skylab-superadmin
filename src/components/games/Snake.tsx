@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useGameVictory } from '@/components/games/GameVictoryContext';
 
 const GRID_SIZE = 20;
 const CELL_PCT = 100 / GRID_SIZE;
@@ -11,6 +12,8 @@ const INITIAL_DIRECTION = [1, 0];
 export function SnakeGame() {
   const boardRef = useRef<HTMLDivElement>(null);
   const directionRef = useRef(INITIAL_DIRECTION);
+  const celebratedRun = useRef(false);
+  const { celebrateVictory } = useGameVictory();
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState([10, 10]);
@@ -31,6 +34,7 @@ export function SnakeGame() {
   }, [snake]);
 
   const resetGame = () => {
+    celebratedRun.current = false;
     setSnake(INITIAL_SNAKE);
     directionRef.current = INITIAL_DIRECTION;
     setDirection(INITIAL_DIRECTION);
@@ -39,6 +43,12 @@ export function SnakeGame() {
     setIsPlaying(true);
     generateFood();
   };
+
+  useEffect(() => {
+    if (!gameOver || score < 12 || celebratedRun.current) return;
+    celebratedRun.current = true;
+    celebrateVictory({ gameTitle: 'Snake (high score)' });
+  }, [gameOver, score, celebrateVictory]);
 
   useEffect(() => {
     if (!isPlaying || gameOver) return;
@@ -127,10 +137,10 @@ export function SnakeGame() {
           role="application"
           aria-label="Yılan tahtası"
           tabIndex={0}
-          className="focus:ring-brand/40 outline-none focus-visible:ring-2"
+          className="focus-visible:ring-brand/40 cursor-pointer outline-none focus-visible:ring-2"
           style={{ touchAction: 'none' }}
         >
-          <div className="bg-dark-100 border-dark-300 relative mx-auto box-border aspect-square w-full max-w-sm border-2">
+          <div className="bg-dark-100 border-dark-300 relative mx-auto box-border aspect-square w-full max-w-sm cursor-pointer border-2">
             {snake.map((segment, i) => (
               <div
                 key={i}

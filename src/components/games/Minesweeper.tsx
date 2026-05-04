@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useGameVictory } from '@/components/games/GameVictoryContext';
 
 const ROWS = 10;
 const COLS = 10;
@@ -19,8 +20,11 @@ export function MinesweeperGame() {
   const [gameOver, setGameOver] = useState(false);
   const [win, setWin] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const celebratedWin = useRef(false);
+  const { celebrateVictory } = useGameVictory();
 
   const initializeGrid = () => {
+    celebratedWin.current = false;
     const newGrid: Cell[][] = Array(ROWS)
       .fill(null)
       .map(() =>
@@ -67,6 +71,12 @@ export function MinesweeperGame() {
     setWin(false);
     setIsPlaying(true);
   };
+
+  useEffect(() => {
+    if (!win || celebratedWin.current) return;
+    celebratedWin.current = true;
+    celebrateVictory({ gameTitle: 'Minesweeper' });
+  }, [win, celebrateVictory]);
 
   const revealCell = (r: number, c: number) => {
     if (gameOver || win || grid[r][c].isRevealed || grid[r][c].isFlagged) return;
@@ -138,12 +148,12 @@ export function MinesweeperGame() {
             row.map((cell, c) => (
               <div
                 key={`${r}-${c}`}
-                className={`flex aspect-square min-h-0 w-full cursor-pointer items-center justify-center rounded-sm text-xs font-bold select-none sm:text-sm ${
+                className={`flex aspect-square min-h-0 w-full items-center justify-center rounded-sm text-xs font-bold select-none sm:text-sm ${
                   cell.isRevealed
                     ? cell.isMine
-                      ? 'bg-red-500'
-                      : 'bg-gray-200'
-                    : 'bg-brand hover:bg-brand-600'
+                      ? 'cursor-default bg-red-500'
+                      : 'cursor-default bg-gray-200'
+                    : 'bg-brand hover:bg-brand-600 cursor-pointer'
                 } `}
                 onClick={() => revealCell(r, c)}
                 onContextMenu={(e) => toggleFlag(e, r, c)}

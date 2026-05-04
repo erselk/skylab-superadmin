@@ -29,10 +29,7 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Kullanıcılar"
-        description="Sistemdeki tüm kullanıcıları görüntüleyin ve yönetin"
-      />
+      <PageHeader title="Kullanıcılar" />
 
       {/* Error State */}
       {error ? (

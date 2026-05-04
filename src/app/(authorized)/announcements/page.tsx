@@ -77,7 +77,6 @@ export default function AnnouncementsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Duyurular"
-          description="Duyuruları görüntüleyin ve yönetin"
           actions={
             <Link href="/announcements/new">
               <Button>

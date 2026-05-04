@@ -53,7 +53,6 @@ export default function EventTypesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Etkinlik Tipleri"
-        description="Etkinlik tiplerini görüntüleyin ve yönetin"
         actions={
           <Link href="/event-types/new">
             <Button>

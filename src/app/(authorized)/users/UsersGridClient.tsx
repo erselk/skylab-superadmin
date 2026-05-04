@@ -71,7 +71,7 @@ export function UsersGridClient({ users }: UsersGridClientProps) {
           <Link
             key={user.id}
             href={`/users/${user.id}`}
-            className="border-dark-200 bg-light hover:border-brand hover:bg-brand-50 block rounded-lg border p-3 transition-all"
+            className="border-dark-200 bg-light hover:border-brand hover:bg-brand-50 block cursor-pointer rounded-lg border p-3 transition-all"
           >
             <div className="flex items-center gap-3">
               <div className="shrink-0">

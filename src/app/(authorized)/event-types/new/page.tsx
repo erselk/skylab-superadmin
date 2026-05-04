@@ -37,7 +37,7 @@ export default function NewEventTypePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Etkinlik Tipi" description="Sisteme yeni etkinlik tipi ekleyin" />
+      <PageHeader title="Yeni Etkinlik Tipi" />
 
       <div className="mx-auto max-w-3xl">
         <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">

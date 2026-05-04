@@ -46,7 +46,7 @@ export default function NewSeasonPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Sezon" description="Sisteme yeni sezon ekleyin" />
+      <PageHeader title="Yeni Sezon" />
 
       <div className="mx-auto max-w-3xl">
         <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">

@@ -64,7 +64,7 @@ export default function LeaderboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="Liderlik Tablosu"
-        description="Etkinlik türü ve sezona göre puan durumu"
+        description="Tür ve sezona göre puan sıralaması"
         actions={
           <Button onClick={loadLeaderboard} disabled={loading || !selectedEventType}>
             Yenile

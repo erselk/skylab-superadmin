@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useGameVictory } from '@/components/games/GameVictoryContext';
 
 const PADS = [
   { id: 0, label: 'Kırmızı', bg: 'bg-red-500', glow: 'ring-red-300' },
@@ -20,6 +21,8 @@ export function SimonGame() {
   const [level, setLevel] = useState(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sequenceRef = useRef<number[]>([]);
+  const celebratedWin = useRef(false);
+  const { celebrateVictory } = useGameVictory();
 
   useEffect(() => {
     sequenceRef.current = sequence;
@@ -69,7 +72,14 @@ export function SimonGame() {
     enqueue(() => playSequence(nextSeq), 320);
   }, [clearTimers, enqueue, playSequence]);
 
+  useEffect(() => {
+    if (phase !== 'won' || celebratedWin.current) return;
+    celebratedWin.current = true;
+    celebrateVictory({ gameTitle: 'Simon' });
+  }, [phase, celebrateVictory]);
+
   const beginGame = () => {
+    celebratedWin.current = false;
     clearTimers();
     setSequence([]);
     sequenceRef.current = [];
@@ -140,7 +150,7 @@ export function SimonGame() {
             aria-label={pad.label}
             disabled={phase !== 'input'}
             onClick={() => onPadPress(pad.id)}
-            className={`${pad.bg} aspect-square rounded-xl opacity-90 ring-4 ring-transparent transition-all hover:opacity-100 disabled:pointer-events-none ${
+            className={`${pad.bg} aspect-square cursor-pointer rounded-xl opacity-90 ring-4 ring-transparent transition-all hover:opacity-100 disabled:pointer-events-none disabled:cursor-not-allowed ${
               highlight === pad.id ? `scale-105 opacity-100 ring-offset-2 ${pad.glow}` : ''
             } `}
           />

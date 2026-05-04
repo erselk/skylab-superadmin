@@ -90,7 +90,6 @@ export default function CompetitorsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Yarışmacılar"
-          description="Tüm yarışmacıları görüntüleyin ve yönetin"
           actions={
             <Link href="/competitors/new">
               <Button>

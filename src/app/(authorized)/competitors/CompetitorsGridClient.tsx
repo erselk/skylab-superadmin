@@ -67,7 +67,7 @@ export function CompetitorsGridClient({ competitorsByEvent }: CompetitorsGridCli
                 competitor.winner ? 'border-brand-300 bg-brand-50/30' : 'border-dark-200'
               }`}
             >
-              <Link href={`/competitors/${competitor.id}/edit`} className="block">
+              <Link href={`/competitors/${competitor.id}/edit`} className="block cursor-pointer">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-dark-900 truncate text-xs font-medium">

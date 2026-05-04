@@ -28,19 +28,18 @@ export function PageHeader({ title, description, actions, className }: PageHeade
           <button
             type="button"
             onClick={sidebar.open}
-            className="inline-flex h-10 w-10 items-center justify-center bg-light text-dark transition hover:bg-light-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-light lg:hidden"
+            className="bg-light text-dark hover:bg-light-100 focus:ring-brand focus:ring-offset-light inline-flex h-10 w-10 cursor-pointer items-center justify-center transition focus:ring-2 focus:ring-offset-2 focus:outline-none lg:hidden"
             aria-label="Menüyü aç"
           >
             <HiOutlineBars3 className="h-5 w-5" />
           </button>
         ) : null}
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-brand">{title}</h1>
-          {description ? <p className="text-sm text-dark-600">{description}</p> : null}
+          <h1 className="text-brand text-3xl font-bold">{title}</h1>
+          {description ? <p className="text-dark-600 text-sm">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
-

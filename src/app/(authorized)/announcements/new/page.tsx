@@ -72,7 +72,7 @@ export default function NewAnnouncementPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Duyuru" description="Sisteme yeni duyuru ekleyin" />
+      <PageHeader title="Yeni Duyuru" />
 
       <div className="mx-auto max-w-3xl">
         <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">

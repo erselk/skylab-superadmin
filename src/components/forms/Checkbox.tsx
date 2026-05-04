@@ -10,27 +10,25 @@ interface CheckboxProps {
 }
 
 export function Checkbox({ name, label, required, hint }: CheckboxProps) {
-  const { register, formState: { errors } } = useFormContext();
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext();
 
   return (
     <div>
-      <label className="flex items-center gap-2">
+      <label className="flex cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           {...register(name)}
-          className="w-4 h-4 text-dark border-dark-200 rounded focus:ring-brand"
+          className="text-dark border-dark-200 focus:ring-brand h-4 w-4 rounded"
         />
-        <span className="text-sm font-medium text-dark">
+        <span className="text-dark text-sm font-medium">
           {label} {required && <span className="text-dark">*</span>}
         </span>
       </label>
-      {hint && (
-        <p className="text-xs text-dark opacity-70 mt-1 ml-6">{hint}</p>
-      )}
-      {errors[name] && (
-        <p className="mt-1 text-sm text-dark">{errors[name]?.message as string}</p>
-      )}
+      {hint && <p className="text-dark mt-1 ml-6 text-xs opacity-70">{hint}</p>}
+      {errors[name] && <p className="text-dark mt-1 text-sm">{errors[name]?.message as string}</p>}
     </div>
   );
 }
-

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Skylab Admin Panel',
-  description: 'Super Skylab Admin Panel',
+  title: "Ersel's Game Area — Admin",
+  description: "Ersel's Game Area administration panel.",
 };
 
 export default function RootLayout({

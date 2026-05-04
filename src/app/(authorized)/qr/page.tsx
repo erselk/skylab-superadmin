@@ -53,7 +53,7 @@ export default function QRPage() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-        <PageHeader title="QR Kodlar" description="Bağlantılarınız için hızlıca QR kod oluşturun" />
+        <PageHeader title="QR Kodlar" />
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">
             <Form

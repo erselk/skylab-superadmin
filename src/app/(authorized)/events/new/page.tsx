@@ -186,7 +186,7 @@ export default function NewEventPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Etkinlik" description="Sisteme yeni etkinlik ekleyin" />
+      <PageHeader title="Yeni Etkinlik" />
 
       <div className="mx-auto max-w-3xl">
         <div className="bg-light border-dark-200 rounded-lg border p-4 shadow">

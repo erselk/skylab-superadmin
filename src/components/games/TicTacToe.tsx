@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useGameVictory } from '@/components/games/GameVictoryContext';
 
 type Cell = 'X' | 'O' | null;
 const LINES = [
@@ -35,8 +36,11 @@ export function TicTacToeGame() {
   const [turn, setTurn] = useState<'X' | 'O'>('X');
   const [status, setStatus] = useState<'playing' | 'draw' | 'winX' | 'winO'>('playing');
   const [started, setStarted] = useState(false);
+  const celebratedWin = useRef(false);
+  const { celebrateVictory } = useGameVictory();
 
   const reset = () => {
+    celebratedWin.current = false;
     setBoard(Array(9).fill(null));
     setTurn('X');
     setStatus('playing');
@@ -70,6 +74,12 @@ export function TicTacToeGame() {
       });
     }, 350);
   }, []);
+
+  useEffect(() => {
+    if (status !== 'winX' || celebratedWin.current) return;
+    celebratedWin.current = true;
+    celebrateVictory({ gameTitle: 'Tic-Tac-Toe' });
+  }, [status, celebrateVictory]);
 
   const onCellClick = (i: number) => {
     if (!started || status !== 'playing' || turn !== 'X') return;
@@ -115,7 +125,7 @@ export function TicTacToeGame() {
             type="button"
             disabled={!started || status !== 'playing' || turn !== 'X' || cell !== null}
             onClick={() => onCellClick(i)}
-            className="bg-dark-50 border-dark-200 text-dark hover:bg-brand-50 flex aspect-square items-center justify-center rounded-lg border-2 text-3xl font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-dark-50 border-dark-200 text-dark hover:bg-brand-50 flex aspect-square cursor-pointer items-center justify-center rounded-lg border-2 text-3xl font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cell}
           </button>

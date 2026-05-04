@@ -67,7 +67,6 @@ export default function SeasonsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Sezonlar"
-          description="Sezonları görüntüleyin ve yönetin"
           actions={
             <Link href="/seasons/new">
               <Button>

@@ -100,7 +100,6 @@ export default function MediaPage() {
     <div className="space-y-6">
       <PageHeader
         title="Medya Yönetimi"
-        description="Dosya yükleyin ve paylaşılan medya bağlantılarını yönetin"
         actions={
           <div className="relative">
             <input
@@ -110,7 +109,7 @@ export default function MediaPage() {
               onChange={handleFileUpload}
               disabled={isUploading}
             />
-            <label htmlFor="media-upload">
+            <label htmlFor="media-upload" className="inline-flex cursor-pointer">
               <Button className={isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}>
                 {isUploading ? 'Yükleniyor...' : 'Dosya Yükle'}
               </Button>
@@ -154,7 +153,7 @@ export default function MediaPage() {
                   <button
                     type="button"
                     onClick={() => handleCopy(item.url)}
-                    className="bg-dark-50 hover:bg-dark-100 text-dark-700 flex flex-1 items-center justify-center gap-1 rounded py-1.5 text-xs transition-colors"
+                    className="bg-dark-50 hover:bg-dark-100 text-dark-700 flex flex-1 cursor-pointer items-center justify-center gap-1 rounded py-1.5 text-xs transition-colors"
                   >
                     <HiOutlineClipboard className="h-4 w-4" />
                     {copiedUrl === item.url ? 'Kopyalandı!' : 'URL'}
@@ -162,7 +161,7 @@ export default function MediaPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(item.id)}
-                    className="rounded p-1.5 text-red-500 transition-colors hover:bg-red-50"
+                    className="cursor-pointer rounded p-1.5 text-red-500 transition-colors hover:bg-red-50"
                   >
                     <HiOutlineTrash className="h-4 w-4" />
                   </button>
@@ -214,7 +213,7 @@ export default function MediaPage() {
               <a
                 href={previewMedia.url}
                 download={previewMedia.name}
-                className="bg-dark-100 hover:bg-dark-200 text-dark-800 flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-center font-medium transition-colors"
+                className="bg-dark-100 hover:bg-dark-200 text-dark-800 flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-center font-medium transition-colors"
               >
                 <HiOutlineArrowDownTray className="h-5 w-5" />
                 İndir

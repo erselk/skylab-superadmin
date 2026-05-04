@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   HiOutlineCalendar,
   HiOutlineCalendarDays,
@@ -51,6 +51,10 @@ export function Sidebar({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const effectiveUser = user ?? prefetchedUser;
 
+  useEffect(() => {
+    if (!isMobileOpen) setIsUserMenuOpen(false);
+  }, [isMobileOpen]);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -77,27 +81,34 @@ export function Sidebar({
       'U';
 
     return (
-      <div className="relative">
+      <div
+        className={`flex flex-col overflow-hidden ${isUserMenuOpen ? 'border-dark-700 rounded-lg border' : ''}`}
+      >
         {isUserMenuOpen && (
-          <div
-            className={`border-dark-600 bg-dark-800 absolute bottom-full z-50 mb-2 overflow-hidden rounded-lg border shadow-xl ${showDetails ? 'right-0 left-0' : 'left-0 w-48'}`}
+          <button
+            type="button"
+            title="Çıkış Yap"
+            onClick={handleLogout}
+            className={`group border-dark-700 bg-dark-800 hover:bg-dark-700 flex w-full cursor-pointer items-center border-b px-4 py-3 text-sm font-medium transition-colors ${showDetails ? 'justify-start gap-3' : 'justify-center'}`}
           >
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hover:bg-dark-700 flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 transition-colors hover:text-red-300"
-            >
-              <HiOutlineArrowRightOnRectangle className="h-5 w-5" />
-              <span>Çıkış Yap</span>
-            </button>
-          </div>
+            <HiOutlineArrowRightOnRectangle
+              className="text-danger group-hover:text-danger-300 h-5 w-5 shrink-0"
+              aria-hidden
+            />
+            {showDetails ? (
+              <span className="text-danger group-hover:text-danger-300">Çıkış Yap</span>
+            ) : (
+              <span className="sr-only">Çıkış Yap</span>
+            )}
+          </button>
         )}
         <button
           type="button"
           onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-          className={`group hover:bg-dark-800 flex w-full items-center gap-3 rounded-lg p-2 transition-colors ${
-            showDetails ? '' : 'justify-center'
-          }`}
+          aria-expanded={isUserMenuOpen}
+          className={`group hover:bg-dark-800 flex w-full cursor-pointer items-center gap-3 p-2 transition-colors ${
+            isUserMenuOpen ? 'rounded-none' : 'rounded-lg'
+          } ${showDetails ? '' : 'justify-center'}`}
         >
           {effectiveUser.profilePictureUrl ? (
             <img
@@ -129,17 +140,25 @@ export function Sidebar({
     <div className="flex h-full flex-col">
       <div
         className={`border-dark-700 flex items-center border-b p-4 ${
-          showLabels ? 'justify-start' : 'justify-center'
+          showLabels ? 'min-h-[3.75rem] justify-start py-3' : 'justify-center'
         }`}
       >
         {showLabels ? (
-          <img
-            src="/logoyatay.png"
-            alt="Skylab Admin"
-            className="h-12 w-auto origin-left transition-all"
-          />
+          <div className="flex h-14 w-full min-w-0 flex-1 items-center justify-start overflow-hidden pr-1">
+            <img
+              src="/logoyatay.png"
+              alt="Skylab Admin"
+              className="h-full max-h-14 w-full object-contain object-left"
+            />
+          </div>
         ) : (
-          <img src="/logo.png" alt="Skylab Admin" className="h-12 w-12 object-contain" />
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden p-1">
+            <img
+              src="/logo.png"
+              alt="Skylab Admin"
+              className="h-full w-full object-contain object-center"
+            />
+          </div>
         )}
       </div>
 
@@ -151,7 +170,7 @@ export function Sidebar({
               (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}/`));
 
             const linkClasses = [
-              'flex items-center rounded-lg text-sm font-medium transition-colors',
+              'flex cursor-pointer items-center rounded-lg text-sm font-medium transition-colors',
               showLabels ? 'gap-3 px-4 py-2 justify-start' : 'justify-center py-2',
               isActive ? 'bg-brand text-light' : 'text-light hover:bg-dark-800 hover:text-brand',
             ].join(' ');
@@ -170,7 +189,7 @@ export function Sidebar({
         </ul>
       </nav>
 
-      <div className="border-dark-700 border-t p-3">{renderUserSection(showLabels)}</div>
+      <div className="border-dark-700 border-t px-3 pt-4 pb-3">{renderUserSection(showLabels)}</div>
     </div>
   );
 
@@ -181,7 +200,10 @@ export function Sidebar({
           isDesktopExpanded ? 'w-64' : 'w-20'
         }`}
         onMouseEnter={() => setIsDesktopExpanded(true)}
-        onMouseLeave={() => setIsDesktopExpanded(false)}
+        onMouseLeave={() => {
+          setIsDesktopExpanded(false);
+          setIsUserMenuOpen(false);
+        }}
       >
         {renderMenu(isDesktopExpanded)}
       </aside>
@@ -191,7 +213,11 @@ export function Sidebar({
           isMobileOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
-        <div className="bg-dark/60 absolute inset-0" onClick={onMobileClose} role="presentation" />
+        <div
+          className="bg-dark/60 absolute inset-0 cursor-pointer"
+          onClick={onMobileClose}
+          role="presentation"
+        />
       </div>
 
       <aside

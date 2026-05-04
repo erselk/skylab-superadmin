@@ -292,10 +292,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Dashboard"
-        description="Genel durumu, yaklaşan oturumları ve ekip aktivitelerini tek ekrandan takip edin"
-      />
+      <PageHeader title="Dashboard" description="Özet ve kısayollar" />
 
       {backendError && (
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3">
@@ -609,11 +606,13 @@ export default async function DashboardPage() {
             </div>
 
             <div className="flex shrink-0 items-center justify-center px-4 py-2">
-              <img
-                src="/logoyatay.png"
-                alt="Skylab"
-                className="h-14 w-auto max-w-[280px] object-contain brightness-0 sm:h-16 sm:max-w-[340px] lg:h-[4.5rem] lg:max-w-[400px]"
-              />
+              <div className="flex h-14 w-full max-w-[280px] items-center justify-center overflow-hidden sm:h-16 sm:max-w-[340px] lg:h-[4.5rem] lg:max-w-[400px]">
+                <img
+                  src="/logoyatay.png"
+                  alt="Skylab"
+                  className="max-h-full w-full max-w-full object-contain object-center brightness-0"
+                />
+              </div>
             </div>
 
             <div className="flex flex-1 justify-stretch sm:justify-start">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { useGameVictory } from '@/components/games/GameVictoryContext';
 
 const COLS = 10;
 const ROWS = 20;
@@ -359,8 +360,23 @@ export function TetrisGame() {
     playing: false,
   });
   const boardRef = useRef<HTMLDivElement>(null);
+  const celebratedRun = useRef(false);
+  const { celebrateVictory } = useGameVictory();
 
-  const startGame = () => dispatch({ type: 'RESET' });
+  const startGame = () => {
+    celebratedRun.current = false;
+    dispatch({ type: 'RESET' });
+  };
+
+  useEffect(() => {
+    if (!state.gameOver) {
+      celebratedRun.current = false;
+      return;
+    }
+    if (state.score < 70 || celebratedRun.current) return;
+    celebratedRun.current = true;
+    celebrateVictory({ gameTitle: 'Tetris' });
+  }, [state.gameOver, state.score, celebrateVictory]);
 
   useEffect(() => {
     if (!state.playing || state.gameOver) return;
@@ -452,11 +468,11 @@ export function TetrisGame() {
         tabIndex={0}
         role="application"
         aria-label="Tetris tahtası"
-        className="focus:ring-brand/40 w-full max-w-[min(100%,16rem)] outline-none focus-visible:ring-2"
+        className="focus-visible:ring-brand/40 w-full max-w-[min(100%,16rem)] cursor-pointer outline-none focus-visible:ring-2"
         style={{ touchAction: 'none' }}
       >
         <div
-          className="border-dark-300 bg-dark-300 grid aspect-[10/20] w-full grid-cols-10 gap-px border-2 p-px"
+          className="border-dark-300 bg-dark-300 grid aspect-[10/20] w-full cursor-pointer grid-cols-10 gap-px border-2 p-px"
           style={{ gridAutoRows: '1fr' }}
         >
           {cells}

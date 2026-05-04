@@ -8,10 +8,33 @@ import { MemoryGame } from '@/components/games/Memory';
 import { TicTacToeGame } from '@/components/games/TicTacToe';
 import { SimonGame } from '@/components/games/Simon';
 import { TetrisGame } from '@/components/games/Tetris';
+import { RockPaperScissorsGame } from '@/components/games/RockPaperScissors';
+import { ReflexGame } from '@/components/games/Reflex';
+import { GameVictoryProvider } from '@/components/games/GameVictoryContext';
 
-type GameType = 'snake' | 'minesweeper' | 'memory' | 'tictactoe' | 'simon' | 'tetris' | null;
+type GameType =
+  | 'snake'
+  | 'minesweeper'
+  | 'memory'
+  | 'tictactoe'
+  | 'simon'
+  | 'tetris'
+  | 'rps'
+  | 'reflex'
+  | null;
+
+const gameBtn =
+  'rounded-xl border-2 p-4 transition-all hover:scale-[1.02] cursor-pointer sm:p-6 text-left';
 
 export default function WaitingRoomPage() {
+  return (
+    <GameVictoryProvider>
+      <WaitingRoomContent />
+    </GameVictoryProvider>
+  );
+}
+
+function WaitingRoomContent() {
   const [activeGame, setActiveGame] = useState<GameType>(null);
 
   return (
@@ -19,16 +42,15 @@ export default function WaitingRoomPage() {
       <div className="space-y-4 text-center">
         <h1 className="text-brand text-3xl font-bold">Bekleme Salonu</h1>
         <p className="text-dark-600 text-lg">
-          Hesabınız henüz yetkilendirilmemiştir. Yönetici onayı beklerken oyun oynayarak vakit
-          geçirebilirsiniz.
+          Resmî sıra uzunsa üzülmeyin; buradaki sıra yılanla. Aşağıdan bir retro seçin.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         <button
           type="button"
           onClick={() => setActiveGame('snake')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'snake'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -42,7 +64,7 @@ export default function WaitingRoomPage() {
         <button
           type="button"
           onClick={() => setActiveGame('minesweeper')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'minesweeper'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -56,7 +78,7 @@ export default function WaitingRoomPage() {
         <button
           type="button"
           onClick={() => setActiveGame('memory')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'memory'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -70,7 +92,7 @@ export default function WaitingRoomPage() {
         <button
           type="button"
           onClick={() => setActiveGame('tictactoe')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'tictactoe'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -84,7 +106,7 @@ export default function WaitingRoomPage() {
         <button
           type="button"
           onClick={() => setActiveGame('simon')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'simon'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -98,7 +120,7 @@ export default function WaitingRoomPage() {
         <button
           type="button"
           onClick={() => setActiveGame('tetris')}
-          className={`rounded-xl border-2 p-4 transition-all hover:scale-[1.02] sm:p-6 ${
+          className={`${gameBtn} ${
             activeGame === 'tetris'
               ? 'border-brand bg-brand-50'
               : 'border-dark-200 hover:border-brand-200 bg-white'
@@ -107,6 +129,34 @@ export default function WaitingRoomPage() {
           <div className="mb-2 text-3xl sm:text-4xl">🧱</div>
           <h3 className="text-dark text-lg font-bold sm:text-xl">Tetris</h3>
           <p className="text-dark-500 hidden text-xs sm:block sm:text-sm">Blok diz</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveGame('rps')}
+          className={`${gameBtn} ${
+            activeGame === 'rps'
+              ? 'border-brand bg-brand-50'
+              : 'border-dark-200 hover:border-brand-200 bg-white'
+          }`}
+        >
+          <div className="mb-2 text-3xl sm:text-4xl">✊</div>
+          <h3 className="text-dark text-lg font-bold sm:text-xl">Taş-Kağıt-Makas</h3>
+          <p className="text-dark-500 hidden text-xs sm:block sm:text-sm">İlk 5 sayı</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveGame('reflex')}
+          className={`${gameBtn} ${
+            activeGame === 'reflex'
+              ? 'border-brand bg-brand-50'
+              : 'border-dark-200 hover:border-brand-200 bg-white'
+          }`}
+        >
+          <div className="mb-2 text-3xl sm:text-4xl">⚡</div>
+          <h3 className="text-dark text-lg font-bold sm:text-xl">Refleks</h3>
+          <p className="text-dark-500 hidden text-xs sm:block sm:text-sm">Yeşil olunca tıkla</p>
         </button>
       </div>
 
@@ -118,6 +168,8 @@ export default function WaitingRoomPage() {
           {activeGame === 'tictactoe' && <TicTacToeGame />}
           {activeGame === 'simon' && <SimonGame />}
           {activeGame === 'tetris' && <TetrisGame />}
+          {activeGame === 'rps' && <RockPaperScissorsGame />}
+          {activeGame === 'reflex' && <ReflexGame />}
           {!activeGame && (
             <div className="text-dark-400 flex items-center justify-center italic">
               Oynamak için bir oyun seçin

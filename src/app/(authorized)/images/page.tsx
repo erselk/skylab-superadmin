@@ -87,7 +87,7 @@ export default function ImagesPage() {
   return (
     <>
       <div className="space-y-6">
-        <PageHeader title="Resimler" description="Etkinliklere ait tüm görselleri görüntüleyin" />
+        <PageHeader title="Resimler" />
 
         {error && (
           <div className="bg-light border-dark-200 text-dark mb-6 rounded-lg border p-4">
@@ -157,7 +157,7 @@ export default function ImagesPage() {
                   <img
                     src={img.url}
                     alt={img.name || 'image'}
-                    className="block max-h-80 w-full object-cover"
+                    className="block max-h-80 w-full cursor-pointer object-cover"
                     loading="lazy"
                     onClick={() => setPreviewImage({ url: img.url, name: img.name, id: img.id })}
                   />
